@@ -127,11 +127,12 @@ app.post('/api/predict', async (req, res) => {
         }
         
         // Map database field names to ML API expected names
+        // In your /api/predict endpoint, modify the data mapping section to use K instead of potassium
         data = {
           soil_moisture: latestData.rows[0].soil_moisture,
           N: latestData.rows[0].nitrogen,
           P: latestData.rows[0].phosphorus,
-          K: latestData.rows[0].potassium,
+          K: latestData.rows[0].potassium,  // Change this line from potassium to K
           soil_pH: latestData.rows[0].soil_pH,
           // Provide some reasonable defaults for the required fields
           land_size: 10,

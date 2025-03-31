@@ -58,6 +58,39 @@
         </div>
       </div>
 
+      <!-- Prediction Panel - Moved up for better visibility -->
+      <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Crop Yield Prediction</h2>
+        <form id="predictionForm" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Land Size (acres)</label>
+            <input type="number" id="landSize" class="w-full border rounded-md px-3 py-2" min="1" max="1000" value="10">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Previous Crop</label>
+            <input type="text" id="currentCrop" class="w-full border rounded-md px-3 py-2" placeholder="e.g., Wheat" value="Onion">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Crop to Grow</label>
+            <input type="text" id="cropToGrow" class="w-full border rounded-md px-3 py-2" placeholder="e.g., Rice" value="Sesamum">
+          </div>
+          <div class="md:col-span-3">
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+              Generate Prediction
+            </button>
+          </div>
+        </form>
+        
+        <div id="predictionResult" class="mt-6 hidden">
+          <h3 class="text-lg font-medium mb-2">Prediction Results</h3>
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <div id="predictionContent" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Prediction results will appear here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Charts section -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <!-- Historical data chart -->
@@ -120,39 +153,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Prediction Panel -->
-<div class="bg-white rounded-lg shadow-md p-6 mb-8">
-    <h2 class="text-xl font-semibold mb-4">Crop Yield Prediction</h2>
-    <form id="predictionForm" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Land Size (acres)</label>
-        <input type="number" id="landSize" class="w-full border rounded-md px-3 py-2" min="1" max="1000" value="10">
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Current Crop</label>
-        <input type="text" id="currentCrop" class="w-full border rounded-md px-3 py-2" placeholder="e.g., Wheat">
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Crop to Grow</label>
-        <input type="text" id="cropToGrow" class="w-full border rounded-md px-3 py-2" placeholder="e.g., Rice">
-      </div>
-      <div class="md:col-span-3">
-        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
-          Generate Prediction
-        </button>
-      </div>
-    </form>
-    
-    <div id="predictionResult" class="mt-6 hidden">
-      <h3 class="text-lg font-medium mb-2">Prediction Results</h3>
-      <div class="bg-gray-50 p-4 rounded-lg">
-        <div id="predictionContent" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Prediction results will appear here -->
-        </div>
-      </div>
-    </div>
-  </div>
     </main>
   </div>
 
@@ -208,106 +208,120 @@
 
     // Generate crop prediction
     async function generatePrediction(event) {
-    event.preventDefault();
-    
-    const landSize = document.getElementById('landSize').value;
-    const currentCrop = document.getElementById('currentCrop').value;
-    const cropToGrow = document.getElementById('cropToGrow').value;
-    
-    // Validate inputs
-    if (!landSize || !currentCrop || !cropToGrow) {
-        alert('Please fill in all prediction fields');
-        return;
+      event.preventDefault();
+      
+      const landSize = document.getElementById('landSize').value;
+      const currentCrop = document.getElementById('currentCrop').value;
+      const cropToGrow = document.getElementById('cropToGrow').value;
+      
+      // Validate inputs
+      if (!landSize || !currentCrop || !cropToGrow) {
+          alert('Please fill in all prediction fields');
+          return;
+      }
+      
+      try {
+          // Get the most recent sensor data
+          let recentData;
+          if (sensorData.length > 0) {
+            recentData = sensorData[0];
+          } else {
+            // Fetch the latest reading if no data loaded yet
+            const response = await fetch('/api/latest-reading');
+            recentData = await response.json();
+            
+            if (!recentData) {
+              alert('No sensor data available for prediction. Please add some data first.');
+              return;
+            }
+          }
+          
+          // Show loading state
+          predictionContent.innerHTML = '<div class="col-span-2 text-center py-4">Generating prediction...</div>';
+          predictionResult.classList.remove('hidden');
+          
+          // Send to ML API
+          const mlResponse = await fetch('/api/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                soil_moisture: recentData.soil_moisture,
+                N: recentData.nitrogen,
+                P: recentData.phosphorus,
+                K: recentData.potassium,
+                soil_pH: recentData.soil_ph,
+                land_size: parseInt(landSize),
+                last_crop: currentCrop,
+                crop: cropToGrow
+            })
+          });
+          
+          if (!mlResponse.ok) {
+            throw new Error(`API responded with status: ${mlResponse.status}`);
+          }
+          
+          const prediction = await mlResponse.json();
+          console.log("Prediction response:", prediction);
+          
+          // Display prediction results
+          let predictionHtml = '';
+          
+          // Handle the actual response format from the API
+          if (prediction.expected_yield !== undefined) {
+            const expectedYield = parseFloat(prediction.expected_yield).toFixed(2);
+            
+            predictionHtml = `
+                <div>
+                <p class="text-sm text-gray-500">Soil Analysis Used</p>
+                <ul class="mt-1 ml-5 list-disc text-sm">
+                    <li>Moisture: ${recentData.soil_moisture}%</li>
+                    <li>Nitrogen: ${recentData.nitrogen} mg/kg</li>
+                    <li>Phosphorus: ${recentData.phosphorus} mg/kg</li>
+                    <li>Potassium: ${recentData.potassium} mg/kg</li>
+                    <li>pH: ${recentData.soil_ph}</li>
+                </ul>
+                </div>
+                <div>
+                <p class="text-sm text-gray-500">Prediction Results</p>
+                <div class="mt-1">
+                    <p class="text-xl font-bold text-green-700">${expectedYield} tons/acre</p>
+                    <p class="text-sm">Expected yield for ${cropToGrow}</p>
+                    <div class="mt-4 p-3 bg-blue-50 rounded">
+                      <p class="font-semibold">Optimal Soil Conditions:</p>
+                      <ul class="mt-1 ml-5 list-disc text-sm">
+                        <li>Optimal Nitrogen: ${prediction.optimal_N} mg/kg</li>
+                        <li>Optimal Phosphorus: ${prediction.optimal_P} mg/kg</li>
+                        <li>Optimal Potassium: ${prediction.optimal_K} mg/kg</li>
+                        <li>Optimal pH Range: ${prediction.optimal_pH_min.toFixed(1)} - ${prediction.optimal_pH_max.toFixed(1)}</li>
+                      </ul>
+                    </div>
+                </div>
+                </div>
+            `;
+          } else {
+            predictionHtml = `
+                <div class="col-span-2">
+                <p class="text-red-500">Could not generate prediction. API returned unexpected data.</p>
+                <pre class="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">${JSON.stringify(prediction, null, 2)}</pre>
+                </div>
+            `;
+          }
+          
+          predictionContent.innerHTML = predictionHtml;
+          
+      } catch (error) {
+          console.error('Error generating prediction:', error);
+          predictionContent.innerHTML = `
+          <div class="col-span-2 text-red-500">
+              An error occurred while generating the prediction: ${error.message}
+              <p class="mt-2 text-xs">Check the console for more details.</p>
+          </div>
+          `;
+      }
     }
-    
-    try {
-        // Fetch the last 30 minutes of data
-        const response = await fetch('/api/sensor-data?interval=30 minutes');
-        const data = await response.json();
-        
-        if (data.length === 0) {
-        alert('No sensor data available for prediction. Please add some data first.');
-        return;
-        }
-        
-        // Calculate averages from the last 30 minutes of data
-        const avgData = {
-        soil_moisture: Math.round(data.reduce((sum, reading) => sum + reading.soil_moisture, 0) / data.length),
-        nitrogen: Math.round(data.reduce((sum, reading) => sum + reading.nitrogen, 0) / data.length),
-        phosphorus: Math.round(data.reduce((sum, reading) => sum + reading.phosphorus, 0) / data.length),
-        potassium: Math.round(data.reduce((sum, reading) => sum + reading.potassium, 0) / data.length),
-        soil_pH: Number((data.reduce((sum, reading) => sum + reading.soil_ph, 0) / data.length).toFixed(1))
-        };
-        
-        // Show loading state
-        predictionContent.innerHTML = '<div class="col-span-2 text-center py-4">Generating prediction...</div>';
-        predictionResult.classList.remove('hidden');
-        
-        // Send to ML API
-        const mlResponse = await fetch('/api/predict', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            soil_moisture: avgData.soil_moisture,
-            N: avgData.nitrogen,
-            P: avgData.phosphorus,
-            K: avgData.potassium,
-            soil_pH: avgData.soil_pH,
-            land_size: parseInt(landSize),
-            last_crop: currentCrop,
-            crop: cropToGrow
-        })
-        });
-        
-        const prediction = await mlResponse.json();
-        
-        // Display prediction results
-        let predictionHtml = '';
-        
-        // Check if the prediction contains the expected data
-        if (prediction.yield_prediction) {
-        predictionHtml = `
-            <div>
-            <p class="text-sm text-gray-500">Soil Analysis Used</p>
-            <ul class="mt-1 ml-5 list-disc text-sm">
-                <li>Moisture: ${avgData.soil_moisture}%</li>
-                <li>Nitrogen: ${avgData.nitrogen} mg/kg</li>
-                <li>Phosphorus: ${avgData.phosphorus} mg/kg</li>
-                <li>Potassium: ${avgData.potassium} mg/kg</li>
-                <li>pH: ${avgData.soil_pH}</li>
-            </ul>
-            </div>
-            <div>
-            <p class="text-sm text-gray-500">Prediction Results</p>
-            <div class="mt-1">
-                <p class="text-xl font-bold text-green-700">${prediction.yield_prediction} tons/acre</p>
-                <p class="text-sm">Expected yield for ${cropToGrow}</p>
-                ${prediction.recommendation ? `<p class="mt-2 text-sm p-2 bg-blue-50 rounded">${prediction.recommendation}</p>` : ''}
-            </div>
-            </div>
-        `;
-        } else {
-        predictionHtml = `
-            <div class="col-span-2">
-            <p class="text-red-500">Could not generate prediction. API returned unexpected data.</p>
-            <pre class="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">${JSON.stringify(prediction, null, 2)}</pre>
-            </div>
-        `;
-        }
-        
-        predictionContent.innerHTML = predictionHtml;
-        
-    } catch (error) {
-        console.error('Error generating prediction:', error);
-        predictionContent.innerHTML = `
-        <div class="col-span-2 text-red-500">
-            An error occurred while generating the prediction. Please try again.
-        </div>
-        `;
-    }
-    }
+
     // Fetch sensor data
     async function fetchData() {
       try {
@@ -604,7 +618,7 @@
               <path d="M10,70 A60,60 0 0,1 110,70" fill="none" stroke="#e5e7eb" stroke-width="10" stroke-linecap="round" />
               <path d="M10,70 A60,60 0 0,1 110,70" fill="none" stroke="${gauge.color}" stroke-width="10" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="${getGaugeOffset(gauge.name, gauge.value)}" />
             </svg>
-            <div class="gauge-value text-2xl ${gauge.color}">${gauge.value}${gauge.unit}</div>
+            <div class="gauge-value text-2xl ${gauge.color === '#22c55e' ? 'text-green-600' : ''}">${gauge.value}${gauge.unit}</div>
           </div>
           <div class="text-center mt-2">
             <h3 class="font-medium">${gauge.name}</h3>
