@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soil Sensor Dashboard</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <style>
+    .gauge {
+      position: relative;
+      height: 120px;
+    }
+    .gauge-value {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="min-h-screen">
+    <!-- Header -->
+    <header class="bg-green-700 text-white shadow-lg">
+      <div class="container mx-auto px-4 py-4">
+        <div class="flex justify-between items-center">
+          <h1 class="text-2xl font-bold">Agricultural Soil Sensor Dashboard</h1>
+          <div class="flex space-x-4">
+            <button id="refreshBtn" class="bg-green-800 hover:bg-green-900 px-4 py-2 rounded-lg">
+              Refresh Data
+            </button>
+            <button id="addDummyBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg">
+              Add Sample Data
+            </button>
+            <button id="clearDataBtn" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg">
+              Clear All Data
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="container mx-auto px-4 py-8">
+      <!-- Status panel -->
+      <div class="mb-8 bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold mb-4">Current Soil Status</h2>
+        <div id="noData" class="hidden text-center py-8 text-gray-500">
+          No sensor data available. Add sample data or connect your sensors.
+        </div>
+        <div id="currentStatus" class="grid grid-cols-1 md:grid-cols-5 gap-6">
+          <!-- Gauges will be added here via JavaScript -->
+        </div>
+      </div>
+
+      <!-- Charts section -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Historical data chart -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold mb-4">Soil Nutrients (NPK) History</h2>
+          <div class="h-80">
+            <canvas id="nutrientsChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Moisture and pH chart -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold mb-4">Moisture & pH History</h2>
+          <div class="h-80">
+            <canvas id="moistureChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent readings table -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-semibold">Recent Readings</h2>
+          <select id="timeInterval" class="border rounded-md px-3 py-1.5">
+            <option value="1 hour">Last Hour</option>
+            <option value="12 hours">Last 12 Hours</option>
+            <option value="1 day" selected>Last 24 Hours</option>
+            <option value="7 days">Last 7 Days</option>
+            <option value="30 days">Last 30 Days</option>
+          </select>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Moisture</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nitrogen</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phosphorus</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Potassium</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Soil pH</th>
+              </tr>
+            </thead>
+            <tbody id="readingsTableBody" class="bg-white divide-y divide-gray-200">
+              <!-- Table rows will be added here via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+        <div id="tablePagination" class="flex justify-between items-center mt-4">
+          <div>
+            <span id="paginationInfo">Showing 1-10 of 0 entries</span>
+          </div>
+          <div class="flex space-x-2">
+            <button id="prevPage" class="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed">
+              Previous
+            </button>
+            <button id="nextPage" class="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed">
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Global variables
+    let sensorData = [];
+    let currentPage = 1;
+    const rowsPerPage = 10;
+    let nutrientsChart, moistureChart;
+
+    // DOM elements
+    const refreshBtn = document.getElementById('refreshBtn');
+    const addDummyBtn = document.getElementById('addDummyBtn');
+    const clearDataBtn = document.getElementById('clearDataBtn');
+    const timeIntervalSelect = document.getElementById('timeInterval');
+    const readingsTableBody = document.getElementById('readingsTableBody');
+    const paginationInfo = document.getElementById('paginationInfo');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const currentStatus = document.getElementById('currentStatus');
+    const noDataInfo = document.getElementById('noData');
+
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchData();
+      initCharts();
+      setupEventListeners();
+    });
+
+    // Set up event listeners
+    function setupEventListeners() {
+      refreshBtn.addEventListener('click', fetchData);
+      addDummyBtn.addEventListener('click', addDummyData);
+      clearDataBtn.addEventListener('click', clearAllData);
+      timeIntervalSelect.addEventListener('change', fetchData);
+      prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          renderTable();
+        }
+      });
+      nextPageBtn.addEventListener('click', () => {
+        if (currentPage * rowsPerPage < sensorData.length) {
+          currentPage++;
+          renderTable();
+        }
+      });
+    }
+
+    // Fetch sensor data
+    async function fetchData() {
+      try {
+        const interval = timeIntervalSelect.value;
+        const response = await fetch(`/api/sensor-data?interval=${interval}`);
+        sensorData = await response.json();
+        
+        currentPage = 1;
+        renderTable();
+        updateCharts();
+        updateCurrentStatus();
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    }
+
+    // Add dummy data
+    async function addDummyData() {
+      try {
+        await fetch('/api/sensor-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({})  // Empty object for dummy data
+        });
+        fetchData();
+      } catch (error) {
+        console.error('Error adding dummy data:', error);
+      }
+    }
+
+    // Clear all data
+    async function clearAllData() {
+      if (confirm('Are you sure you want to clear all sensor data?')) {
+        try {
+          await fetch('/api/sensor-data', {
+            method: 'DELETE'
+          });
+          fetchData();
+        } catch (error) {
+          console.error('Error clearing data:', error);
+        }
+      }
+    }
+
+    // Render data table
+    function renderTable() {
+      readingsTableBody.innerHTML = '';
+      
+      if (sensorData.length === 0) {
+        noDataInfo.classList.remove('hidden');
+        readingsTableBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="px-6 py-4 text-center text-gray-500">No data available</td>
+          </tr>
+        `;
+        paginationInfo.textContent = 'Showing 0-0 of 0 entries';
+        prevPageBtn.disabled = true;
+        nextPageBtn.disabled = true;
+        return;
+      }
+      
+      noDataInfo.classList.add('hidden');
+      
+      const start = (currentPage - 1) * rowsPerPage;
+      const end = Math.min(start + rowsPerPage, sensorData.length);
+      
+      for (let i = start; i < end; i++) {
+        const reading = sensorData[i];
+        const row = document.createElement('tr');
+        
+        const date = new Date(reading.timestamp);
+        const formattedDate = date.toLocaleString();
+        
+        row.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap">${formattedDate}</td>
+          <td class="px-6 py-4 whitespace-nowrap">${reading.soil_moisture}%</td>
+          <td class="px-6 py-4 whitespace-nowrap">${reading.nitrogen} mg/kg</td>
+          <td class="px-6 py-4 whitespace-nowrap">${reading.phosphorus} mg/kg</td>
+          <td class="px-6 py-4 whitespace-nowrap">${reading.potassium} mg/kg</td>
+          <td class="px-6 py-4 whitespace-nowrap">${reading.soil_ph}</td>
+        `;
+        
+        readingsTableBody.appendChild(row);
+      }
+      
+      // Update pagination info
+      paginationInfo.textContent = `Showing ${start + 1}-${end} of ${sensorData.length} entries`;
+      
+      // Update pagination buttons
+      prevPageBtn.disabled = currentPage === 1;
+      nextPageBtn.disabled = end >= sensorData.length;
+    }
+
+    // Initialize charts
+    function initCharts() {
+      // Nutrients chart
+      const nutrientsCtx = document.getElementById('nutrientsChart').getContext('2d');
+      nutrientsChart = new Chart(nutrientsCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Nitrogen (N)',
+              data: [],
+              borderColor: 'rgb(59, 130, 246)',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              tension: 0.1,
+              fill: true
+            },
+            {
+              label: 'Phosphorus (P)',
+              data: [],
+              borderColor: 'rgb(16, 185, 129)',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              tension: 0.1,
+              fill: true
+            },
+            {
+              label: 'Potassium (K)',
+              data: [],
+              borderColor: 'rgb(249, 115, 22)',
+              backgroundColor: 'rgba(249, 115, 22, 0.1)',
+              tension: 0.1,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Concentration (mg/kg)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Time'
+              }
+            }
+          }
+        }
+      });
+      
+      // Moisture & pH chart
+      const moistureCtx = document.getElementById('moistureChart').getContext('2d');
+      moistureChart = new Chart(moistureCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Soil Moisture',
+              data: [],
+              borderColor: 'rgb(6, 182, 212)',
+              backgroundColor: 'rgba(6, 182, 212, 0.1)',
+              tension: 0.1,
+              fill: true,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Soil pH',
+              data: [],
+              borderColor: 'rgb(190, 24, 93)',
+              backgroundColor: 'rgba(190, 24, 93, 0.1)',
+              tension: 0.1,
+              fill: true,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Moisture (%)'
+              },
+              position: 'left'
+            },
+            y1: {
+              beginAtZero: false,
+              title: {
+                display: true,
+                text: 'pH'
+              },
+              min: 3,
+              max: 9,
+              position: 'right',
+              grid: {
+                drawOnChartArea: false
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Time'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Update charts with new data
+    function updateCharts() {
+      if (sensorData.length === 0) return;
+      
+      const chartData = [...sensorData].reverse().slice(0, 20);
+      const labels = chartData.map(d => {
+        const date = new Date(d.timestamp);
+        return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      });
+      
+      // Update nutrients chart
+      nutrientsChart.data.labels = labels;
+      nutrientsChart.data.datasets[0].data = chartData.map(d => d.nitrogen);
+      nutrientsChart.data.datasets[1].data = chartData.map(d => d.phosphorus);
+      nutrientsChart.data.datasets[2].data = chartData.map(d => d.potassium);
+      nutrientsChart.update();
+      
+      // Update moisture & pH chart
+      moistureChart.data.labels = labels;
+      moistureChart.data.datasets[0].data = chartData.map(d => d.soil_moisture);
+      moistureChart.data.datasets[1].data = chartData.map(d => d.soil_ph);
+      moistureChart.update();
+    }
+
+    // Update current status gauges
+    function updateCurrentStatus() {
+      if (sensorData.length === 0) {
+        currentStatus.innerHTML = '';
+        noDataInfo.classList.remove('hidden');
+        return;
+      }
+      
+      noDataInfo.classList.add('hidden');
+      const latest = sensorData[0];
+      
+      // Define gauges
+      const gauges = [
+        {
+          name: 'Soil Moisture',
+          value: latest.soil_moisture,
+          unit: '%',
+          optimal: '30-50%',
+          color: getColorClass(latest.soil_moisture, 20, 30, 50, 70)
+        },
+        {
+          name: 'Nitrogen',
+          value: latest.nitrogen,
+          unit: 'mg/kg',
+          optimal: '40-80 mg/kg',
+          color: getColorClass(latest.nitrogen, 20, 40, 80, 100)
+        },
+        {
+          name: 'Phosphorus',
+          value: latest.phosphorus,
+          unit: 'mg/kg',
+          optimal: '20-60 mg/kg',
+          color: getColorClass(latest.phosphorus, 10, 20, 60, 80)
+        },
+        {
+          name: 'Potassium',
+          value: latest.potassium,
+          unit: 'mg/kg',
+          optimal: '30-70 mg/kg',
+          color: getColorClass(latest.potassium, 15, 30, 70, 90)
+        },
+        {
+          name: 'Soil pH',
+          value: latest.soil_ph,
+          unit: '',
+          optimal: '6.0-7.0',
+          color: getColorClass(latest.soil_ph, 5.0, 6.0, 7.0, 8.0)
+        }
+      ];
+      
+      // Create gauge elements
+      currentStatus.innerHTML = gauges.map(gauge => `
+        <div class="flex flex-col items-center">
+          <div class="gauge">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <path d="M10,70 A60,60 0 0,1 110,70" fill="none" stroke="#e5e7eb" stroke-width="10" stroke-linecap="round" />
+              <path d="M10,70 A60,60 0 0,1 110,70" fill="none" stroke="${gauge.color}" stroke-width="10" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="${getGaugeOffset(gauge.name, gauge.value)}" />
+            </svg>
+            <div class="gauge-value text-2xl ${gauge.color}">${gauge.value}${gauge.unit}</div>
+          </div>
+          <div class="text-center mt-2">
+            <h3 class="font-medium">${gauge.name}</h3>
+            <p class="text-sm text-gray-500">Optimal: ${gauge.optimal}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Helper function to get gauge offset
+    function getGaugeOffset(name, value) {
+      let percentage;
+      if (name === 'Soil pH') {
+        percentage = (value - 4) / 6; // Map pH 4-10 to 0-100%
+      } else {
+        percentage = value / 100;
+      }
+      percentage = Math.min(Math.max(percentage, 0), 1);
+      return 157 - (percentage * 157);
+    }
+
+    // Helper function to get color class based on value
+    function getColorClass(value, veryLow, low, high, veryHigh) {
+      if (value < veryLow) return '#ef4444'; // red-500
+      if (value < low) return '#f97316';     // orange-500
+      if (value <= high) return '#22c55e';   // green-500
+      if (value <= veryHigh) return '#f97316'; // orange-500
+      return '#ef4444';                      // red-500
+    }
+  </script>
+</body>
+</html>
