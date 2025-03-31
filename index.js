@@ -107,39 +107,67 @@ app.post('/api/sensor-data', async (req, res) => {
   }
 });
 
-// API: Get predictions based on sensor data
+// Replace both predict endpoints with this single implementation
 app.post('/api/predict', async (req, res) => {
-  try {
-    const latestData = await pool.query(
-      'SELECT * FROM sensor_data ORDER BY timestamp DESC LIMIT 1'
-    );
-    
-    if (latestData.rows.length === 0) {
-      return res.status(404).json({ error: 'No sensor data available' });
+    try {
+      let data;
+      
+      // Check if we're using request data or fetching latest from DB
+      if (Object.keys(req.body).length > 0) {
+        // Use data from request body
+        data = req.body;
+      } else {
+        // Fetch latest data from database
+        const latestData = await pool.query(
+          'SELECT * FROM sensor_data ORDER BY timestamp DESC LIMIT 1'
+        );
+        
+        if (latestData.rows.length === 0) {
+          return res.status(404).json({ error: 'No sensor data available' });
+        }
+        
+        // Map database field names to ML API expected names
+        data = {
+          soil_moisture: latestData.rows[0].soil_moisture,
+          N: latestData.rows[0].nitrogen,
+          P: latestData.rows[0].phosphorus,
+          K: latestData.rows[0].potassium,
+          soil_pH: latestData.rows[0].soil_pH,
+          // Provide some reasonable defaults for the required fields
+          land_size: 10,
+          last_crop: 'Unknown',
+          crop: 'Unknown'
+        };
+      }
+      
+      // Validate that all required fields are present
+      const requiredFields = ['soil_moisture', 'N', 'P', 'K', 'soil_pH', 'land_size', 'last_crop', 'crop'];
+      const missingFields = requiredFields.filter(field => !data[field]);
+      
+      if (missingFields.length > 0) {
+        return res.status(400).json({ 
+          error: 'Missing required fields',
+          missing: missingFields
+        });
+      }
+      
+      // Log the request for debugging
+      console.log("ML API Request:", data);
+      
+      // Make prediction request to ML model
+      const response = await axios.post('https://manny1313-my-ml-api.hf.space/predict', data);
+      
+      res.json(response.data);
+    } catch (err) {
+      console.error('Error getting prediction:', err);
+      // Add more detailed error logging
+      if (err.response) {
+        console.error('Response data:', err.response.data);
+        console.error('Response status:', err.response.status);
+      }
+      res.status(500).json({ error: 'Prediction service error', details: err.message });
     }
-    
-    const { soil_moisture, nitrogen, phosphorus, potassium, soil_pH } = latestData.rows[0];
-
-    // Note: You might need to adjust your ML API parameters based on the simplified schema
-    const response = await axios.post('https://manny1313-my-ml-api.hf.space/predict', {
-      soil_moisture,
-      N: nitrogen,
-      P: phosphorus,
-      K: potassium,
-      soil_pH,
-      // You might need to provide defaults for these or modify your ML API
-      land_size: 10,
-      last_crop: 'Unknown',
-      crop: 'Unknown',
-    });
-
-    res.json(response.data);
-  } catch (err) {
-    console.error('Error getting prediction:', err);
-    res.status(500).json({ error: 'Prediction service error' });
-  }
-});
-
+  });
 // API: Clear all sensor data
 app.delete('/api/sensor-data', async (req, res) => {
   try {
