@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Marketplace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-image: url('assets/imageiot3.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        /* Remove number input arrows */
+        input.no-arrows::-webkit-outer-spin-button,
+        input.no-arrows::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input.no-arrows {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 bg-opacity-90 flex flex-col items-center justify-center min-h-screen p-6">
+
+    <!-- Container for heading and buttons -->
+   <!-- Container for heading and buttons -->
+   <div class="w-full max-w-4xl flex justify-end items-center mb-6">
+    <div class="text-right">
+        <h1 class="text-3xl font-bold text-gray-800">Crop Marketplace</h1>
+        <div class="mt-2 space-x-4">
+            <button onclick="showSection('sellSection')" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg shadow-md transition-all">Sell Crops</button>
+            <button onclick="showSection('buySection')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md transition-all">Buy Crops</button>
+        </div>
+    </div>
+</div>
+
+    <!-- Sell Crops Section -->
+    <div id="sellSection" class="hidden mt-6 bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
+        <h2 class="text-xl font-semibold text-center text-gray-700 mb-4">Sell Your Crop</h2>
+        <form id="sellForm" class="grid grid-cols-1 gap-4">
+            <input type="text" id="farmerName" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500" placeholder="Your Name" required>
+            <input type="text" id="contactInfo" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500" placeholder="Contact Info" required>
+            <input type="text" id="cropName" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500" placeholder="Crop Name" required>
+            <input type="number" id="pricePerUnit" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 no-arrows" placeholder="Price Per Ton" required>
+            <input type="number" id="quantityAvailable" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 no-arrows" placeholder="Quantity Available" required>
+            <input type="text" id="location" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500" placeholder="Location" required>
+            <p id="errorMessage" class="text-red-500 text-sm hidden">Please enter valid values (greater than zero).</p>
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-md transition-all w-full">Submit Listing</button>
+        </form>
+    </div>
+
+    <!-- Buy Crops Section -->
+    <div id="buySection" class="hidden mt-6 bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl">
+        <h2 class="text-xl font-semibold text-center text-gray-700 mb-4">Available Crops for Sale</h2>
+        <div id="cropListings" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Crop listings will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <script>
+        function showSection(sectionId) {
+            document.getElementById("sellSection").classList.add("hidden");
+            document.getElementById("buySection").classList.add("hidden");
+            document.getElementById(sectionId).classList.remove("hidden");
+        }
+
+        document.getElementById("sellForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            
+            const farmerName = document.getElementById("farmerName").value;
+            const contactInfo = document.getElementById("contactInfo").value;
+            const cropName = document.getElementById("cropName").value;
+            const pricePerUnit = parseFloat(document.getElementById("pricePerUnit").value);
+            const quantityAvailable = parseFloat(document.getElementById("quantityAvailable").value);
+            const location = document.getElementById("location").value;
+            const errorMessage = document.getElementById("errorMessage");
+
+            if (pricePerUnit <= 0 || quantityAvailable <= 0 || isNaN(pricePerUnit) || isNaN(quantityAvailable)) {
+                errorMessage.classList.remove("hidden");
+                return;
+            } else {
+                errorMessage.classList.add("hidden");
+            }
+
+            const cropData = {
+                farmerName,
+                contactInfo,
+                cropName,
+                pricePerUnit,
+                quantityAvailable,
+                location
+            };
+
+            let crops = JSON.parse(localStorage.getItem("crops")) || [];
+            crops.push(cropData);
+            localStorage.setItem("crops", JSON.stringify(crops));
+
+            alert("Crop listed for sale!");
+            document.getElementById("sellForm").reset();
+            loadCropListings();
+        });
+
+        function loadCropListings() {
+            let crops = JSON.parse(localStorage.getItem("crops")) || [];
+            let listingsContainer = document.getElementById("cropListings");
+            listingsContainer.innerHTML = "";
+
+            if (crops.length === 0) {
+                listingsContainer.innerHTML = "<p class='text-center text-gray-500'>No crops listed for sale yet.</p>";
+                return;
+            }
+
+            crops.forEach((crop, index) => {
+                let listing = document.createElement("div");
+                listing.className = "bg-gray-100 p-4 rounded-lg shadow-md transition hover:shadow-lg";
+                listing.innerHTML = `
+                    <p class="text-lg font-semibold text-gray-800">${crop.cropName}</p>
+                    <p class="text-gray-600">Farmer: ${crop.farmerName}</p>
+                    <p class="text-gray-600">Contact: ${crop.contactInfo}</p>
+                    <p class="text-gray-600">Price: $${crop.pricePerUnit} per ton</p>
+                    <p class="text-gray-600">Available: ${crop.quantityAvailable} tons</p>
+                    <p class="text-gray-600">Location: ${crop.location}</p>
+                `;
+                listingsContainer.appendChild(listing);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", loadCropListings);
+    </script>
+
+</body>
+</html>

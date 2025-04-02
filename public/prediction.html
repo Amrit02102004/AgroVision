@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Yield Prediction</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+
+    <!-- Image background -->
+    <style>
+        body {
+            background-image: url('assets/imageiot2.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-6">
+
+    <!-- Prediction Panel -->
+    <div class="bg-white rounded-lg shadow-md p-6 w-full max-w-3xl">
+        <h2 class="text-xl font-semibold mb-4 text-center">Crop Yield Prediction</h2>
+        <form id="predictionForm" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Land Size (acres)</label>
+                <input type="number" id="landSize" class="w-full border rounded-md px-3 py-2" min="1" max="1000" value="10">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Previous Crop</label>
+                <input type="text" id="currentCrop" class="w-full border rounded-md px-3 py-2" placeholder="e.g., Wheat" value="Onion">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Crop to Grow</label>
+                <input type="text" id="cropToGrow" class="w-full border rounded-md px-3 py-2" placeholder="e.g., Rice" value="Sesamum">
+            </div>
+            <div class="md:col-span-3">
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg w-full">
+                    Generate Prediction
+                </button>
+            </div>
+        </form>
+        
+        <div id="predictionResult" class="mt-6 hidden">
+            <h3 class="text-lg font-medium mb-2">Prediction Results</h3>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <div id="predictionContent" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Prediction results will appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Button to go back to the previous page -->
+    <button onclick="window.location.href='dashboard.html'" 
+        class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg mt-6">
+        Go Back
+    </button>
+
+    <script>
+        document.getElementById("predictionForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            document.getElementById("predictionResult").classList.remove("hidden");
+            document.getElementById("predictionContent").innerHTML = "<p class='text-green-700'>Prediction result will be shown here.</p>";
+        });
+    </script>
+
+    
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          setupEventListeners();
+        });
+    
+        function setupEventListeners() {
+          const predictionForm = document.getElementById('predictionForm');
+          if (predictionForm) {
+            predictionForm.addEventListener('submit', generatePrediction);
+          }
+        }
+    
+        async function generatePrediction(event) {
+          event.preventDefault();
+          
+          const landSize = document.getElementById('landSize').value;
+          const currentCrop = document.getElementById('currentCrop').value;
+          const cropToGrow = document.getElementById('cropToGrow').value;
+          const predictionContent = document.getElementById('predictionContent');
+          
+          if (!landSize || !currentCrop || !cropToGrow) {
+              alert('Please fill in all prediction fields');
+              return;
+          }
+          
+          try {
+              const response = await fetch('/api/latest-reading');
+              const recentData = await response.json();
+    
+              if (!recentData) {
+                  alert('No sensor data available for prediction.');
+                  return;
+              }
+    
+              predictionContent.innerHTML = '<div class="col-span-2 text-center py-4">Generating prediction...</div>';
+              predictionResult.classList.remove('hidden');
+    
+              const mlResponse = await fetch('/api/predict', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                      soil_moisture: recentData.soil_moisture,
+                      N: recentData.nitrogen,
+                      P: recentData.phosphorus,
+                      K: recentData.potassium,
+                      soil_pH: recentData.soil_ph,
+                      land_size: parseInt(landSize),
+                      last_crop: currentCrop,
+                      crop: cropToGrow
+                  })
+              });
+    
+              if (!mlResponse.ok) {
+                  throw new Error(`API responded with status: ${mlResponse.status}`);
+              }
+    
+              const prediction = await mlResponse.json();
+              let predictionHtml = '';
+    
+              if (prediction.expected_yield !== undefined) {
+                  const expectedYield = parseFloat(prediction.expected_yield).toFixed(2);
+                  
+                  predictionHtml = `
+                      <div>
+                      <p class="text-sm text-gray-500">Soil Analysis Used</p>
+                      <ul class="mt-1 ml-5 list-disc text-sm">
+                          <li>Moisture: ${recentData.soil_moisture}%</li>
+                          <li>Nitrogen: ${recentData.nitrogen} mg/kg</li>
+                          <li>Phosphorus: ${recentData.phosphorus} mg/kg</li>
+                          <li>Potassium: ${recentData.potassium} mg/kg</li>
+                          <li>pH: ${recentData.soil_ph}</li>
+                      </ul>
+                      </div>
+                      <div>
+                      <p class="text-sm text-gray-500">Prediction Results</p>
+                      <div class="mt-1">
+                          <p class="text-xl font-bold text-green-700">${expectedYield} tons/acre</p>
+                          <p class="text-sm">Expected yield for ${cropToGrow}</p>
+                          <div class="mt-4 p-3 bg-blue-50 rounded">
+                            <p class="font-semibold">Optimal Soil Conditions:</p>
+                            <ul class="mt-1 ml-5 list-disc text-sm">
+                              <li>Optimal Nitrogen: ${prediction.optimal_N} mg/kg</li>
+                              <li>Optimal Phosphorus: ${prediction.optimal_P} mg/kg</li>
+                              <li>Optimal Potassium: ${prediction.optimal_K} mg/kg</li>
+                              <li>Optimal pH Range: ${prediction.optimal_pH_min.toFixed(1)} - ${prediction.optimal_pH_max.toFixed(1)}</li>
+                            </ul>
+                          </div>
+                      </div>
+                      </div>
+                  `;
+              } else {
+                  predictionHtml = `
+                      <div class="col-span-2">
+                      <p class="text-red-500">Could not generate prediction.</p>
+                      <pre class="mt-2 p-2 bg-gray-100 rounded text-xs">${JSON.stringify(prediction, null, 2)}</pre>
+                      </div>
+                  `;
+              }
+              
+              predictionContent.innerHTML = predictionHtml;
+              
+          } catch (error) {
+              console.error('Error generating prediction:', error);
+              predictionContent.innerHTML = `
+              <div class="col-span-2 text-red-500">
+                  An error occurred: ${error.message}
+              </div>
+              `;
+          }
+        }
+    </script>
+    
+
+
+
+
+
+
+
+
+
+</body>
+</html>
