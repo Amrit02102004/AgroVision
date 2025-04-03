@@ -1,636 +1,859 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Soil Sensor Dashboard</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-  <style>
-    .gauge {
-      position: relative;
-      height: 120px;
-    }
-    .gauge-value {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      text-align: center;
-      font-weight: bold;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroSmart - Smart Irrigation Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gray-100">
-  <div class="min-h-screen">
-    <!-- Header -->
-    <header class="bg-green-700 text-white shadow-lg">
-      <div class="container mx-auto px-4 py-4">
-        <div class="flex justify-between items-center">
-          <h1 class="text-2xl font-bold">Agricultural Soil Sensor Dashboard</h1>
-          <div class="flex space-x-4">
-            <button id="refreshBtn" class="bg-green-800 hover:bg-green-900 px-4 py-2 rounded-lg">
-              Refresh Data
-            </button>
-            <button id="addDummyBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg">
-              Add Sample Data
-            </button>
-            <button id="clearDataBtn" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg">
-              Clear All Data
-            </button>
-            <button onclick="window.location.href='prediction.html'" 
-        class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg">
-            Prediction
-          </button>
+<body>
+    
 
-          <button onclick="window.location.href='market.html'" 
-        class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg">
-            Market Place
-          </button>
-
-
-
-
-
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <!-- Main content -->
-    <main class="container mx-auto px-4 py-8">
-      <!-- Status panel -->
-      <div class="mb-8 bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-semibold mb-4">Current Soil Status</h2>
-        <div id="noData" class="hidden text-center py-8 text-gray-500">
-          No sensor data available. Add sample data or connect your sensors.
-        </div>
-        <div id="currentStatus" class="grid grid-cols-1 md:grid-cols-5 gap-6">
-          <!-- Gauges will be added here via JavaScript -->
-        </div>
-      </div>
-
-      
-
-      <!-- Charts section -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <!-- Historical data chart -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <h2 class="text-xl font-semibold mb-4">Soil Nutrients (NPK) History</h2>
-          <div class="h-80">
-            <canvas id="nutrientsChart"></canvas>
-          </div>
-        </div>
-
-        <!-- Moisture and pH chart -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <h2 class="text-xl font-semibold mb-4">Moisture & pH History</h2>
-          <div class="h-80">
-            <canvas id="moistureChart"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <!-- Recent readings table -->
-      <div class="bg-white rounded-lg shadow-md p-6">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Recent Readings</h2>
-          <select id="timeInterval" class="border rounded-md px-3 py-1.5">
-            <option value="1 hour">Last Hour</option>
-            <option value="12 hours">Last 12 Hours</option>
-            <option value="1 day" selected>Last 24 Hours</option>
-            <option value="7 days">Last 7 Days</option>
-            <option value="30 days">Last 30 Days</option>
-          </select>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Moisture</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nitrogen</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phosphorus</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Potassium</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Soil pH</th>
-              </tr>
-            </thead>
-            <tbody id="readingsTableBody" class="bg-white divide-y divide-gray-200">
-              <!-- Table rows will be added here via JavaScript -->
-            </tbody>
-          </table>
-        </div>
-        <div id="tablePagination" class="flex justify-between items-center mt-4">
-          <div>
-            <span id="paginationInfo">Showing 1-10 of 0 entries</span>
-          </div>
-          <div class="flex space-x-2">
-            <button id="prevPage" class="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed">
-              Previous
-            </button>
-            <button id="nextPage" class="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed">
-              Next
-            </button>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <script>
-    // Global variables
-    let sensorData = [];
-    let currentPage = 1;
-    const rowsPerPage = 10;
-    let nutrientsChart, moistureChart;
-
-    // DOM elements
-    const refreshBtn = document.getElementById('refreshBtn');
-    const addDummyBtn = document.getElementById('addDummyBtn');
-    const clearDataBtn = document.getElementById('clearDataBtn');
-    const timeIntervalSelect = document.getElementById('timeInterval');
-    const readingsTableBody = document.getElementById('readingsTableBody');
-    const paginationInfo = document.getElementById('paginationInfo');
-    const prevPageBtn = document.getElementById('prevPage');
-    const nextPageBtn = document.getElementById('nextPage');
-    const currentStatus = document.getElementById('currentStatus');
-    const noDataInfo = document.getElementById('noData');
-    const predictionForm = document.getElementById('predictionForm');
-    const predictionResult = document.getElementById('predictionResult');
-    const predictionContent = document.getElementById('predictionContent');
-
-    // Initialize dashboard
-    document.addEventListener('DOMContentLoaded', () => {
-      fetchData();
-      initCharts();
-      setupEventListeners();
-    });
-
-    // Set up event listeners
-    function setupEventListeners() {
-      refreshBtn.addEventListener('click', fetchData);
-      addDummyBtn.addEventListener('click', addDummyData);
-      clearDataBtn.addEventListener('click', clearAllData);
-      predictionForm.addEventListener('submit', generatePrediction);
-      timeIntervalSelect.addEventListener('change', fetchData);
-      prevPageBtn.addEventListener('click', () => {
-        if (currentPage > 1) {
-          currentPage--;
-          renderTable();
-        }
-      });
-      nextPageBtn.addEventListener('click', () => {
-        if (currentPage * rowsPerPage < sensorData.length) {
-          currentPage++;
-          renderTable();
-        }
-      });
-    }
-
-    // Generate crop prediction
-    async function generatePrediction(event) {
-      event.preventDefault();
-      
-      const landSize = document.getElementById('landSize').value;
-      const currentCrop = document.getElementById('currentCrop').value;
-      const cropToGrow = document.getElementById('cropToGrow').value;
-      
-      // Validate inputs
-      if (!landSize || !currentCrop || !cropToGrow) {
-          alert('Please fill in all prediction fields');
-          return;
-      }
-      
-      try {
-          // Get the most recent sensor data
-          let recentData;
-          if (sensorData.length > 0) {
-            recentData = sensorData[0];
-          } else {
-            // Fetch the latest reading if no data loaded yet
-            const response = await fetch('/api/latest-reading');
-            recentData = await response.json();
-            
-            if (!recentData) {
-              alert('No sensor data available for prediction. Please add some data first.');
-              return;
-            }
-          }
-          
-          // Show loading state
-          predictionContent.innerHTML = '<div class="col-span-2 text-center py-4">Generating prediction...</div>';
-          predictionResult.classList.remove('hidden');
-          
-          // Send to ML API
-          const mlResponse = await fetch('/api/predict', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                soil_moisture: recentData.soil_moisture,
-                N: recentData.nitrogen,
-                P: recentData.phosphorus,
-                K: recentData.potassium,
-                soil_pH: recentData.soil_ph,
-                land_size: parseInt(landSize),
-                last_crop: currentCrop,
-                crop: cropToGrow
-            })
-          });
-          
-          if (!mlResponse.ok) {
-            throw new Error(`API responded with status: ${mlResponse.status}`);
-          }
-          
-          const prediction = await mlResponse.json();
-          console.log("Prediction response:", prediction);
-          
-          // Display prediction results
-          let predictionHtml = '';
-          
-          // Handle the actual response format from the API
-          if (prediction.expected_yield !== undefined) {
-            const expectedYield = parseFloat(prediction.expected_yield).toFixed(2);
-            
-            predictionHtml = `
-                <div>
-                <p class="text-sm text-gray-500">Soil Analysis Used</p>
-                <ul class="mt-1 ml-5 list-disc text-sm">
-                    <li>Moisture: ${recentData.soil_moisture}%</li>
-                    <li>Nitrogen: ${recentData.nitrogen} mg/kg</li>
-                    <li>Phosphorus: ${recentData.phosphorus} mg/kg</li>
-                    <li>Potassium: ${recentData.potassium} mg/kg</li>
-                    <li>pH: ${recentData.soil_ph}</li>
-                </ul>
+    <main>
+        <header>
+            <div class="header-left">
+                <h1>Field Monitoring Dashboard</h1>
+                <div class="time-controls">
+                    <button class="time-btn active" data-interval="1 day">24h</button>
+                    <button class="time-btn" data-interval="7 days">7d</button>
+                    <button class="time-btn" data-interval="30 days">30d</button>
                 </div>
-                <div>
-                <p class="text-sm text-gray-500">Prediction Results</p>
-                <div class="mt-1">
-                    <p class="text-xl font-bold text-green-700">${expectedYield} tons/acre</p>
-                    <p class="text-sm">Expected yield for ${cropToGrow}</p>
-                    <div class="mt-4 p-3 bg-blue-50 rounded">
-                      <p class="font-semibold">Optimal Soil Conditions:</p>
-                      <ul class="mt-1 ml-5 list-disc text-sm">
-                        <li>Optimal Nitrogen: ${prediction.optimal_N} mg/kg</li>
-                        <li>Optimal Phosphorus: ${prediction.optimal_P} mg/kg</li>
-                        <li>Optimal Potassium: ${prediction.optimal_K} mg/kg</li>
-                        <li>Optimal pH Range: ${prediction.optimal_pH_min.toFixed(1)} - ${prediction.optimal_pH_max.toFixed(1)}</li>
-                      </ul>
+            </div>
+            <div class="header-right">
+                <div class="field-selector">
+                    <label for="field-select">Field:</label>
+                    <select id="field-select">
+                        <option value="field1">Field 1</option>
+                        <option value="field2">Field 2</option>
+                        <option value="field3">Field 3</option>
+                    </select>
+                </div>
+                <div class="time">
+                    <i class="far fa-clock"></i>
+                    <span id="current-time"></span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <div class="grid-row">
+                <div class="grid-col">
+                    <div class="card soil-status">
+                        <div class="card-header">
+                            <h2>Soil Status</h2>
+                            <div class="last-updated">
+                                <span>Last updated: </span>
+                                <span id="last-updated-time">--</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="gauge-container">
+                                <div class="gauge" id="moisture-gauge">
+                                    <div class="gauge-body">
+                                        <div class="gauge-fill"></div>
+                                        <div class="gauge-cover"></div>
+                                    </div>
+                                    <div class="gauge-label">
+                                        <span class="gauge-value" id="moisture-value">--</span>
+                                        <span class="gauge-unit">%</span>
+                                    </div>
+                                    <span class="gauge-title">Soil Moisture</span>
+                                </div>
+                                <div class="gauge" id="pH-gauge">
+                                    <div class="gauge-body">
+                                        <div class="gauge-fill"></div>
+                                        <div class="gauge-cover"></div>
+                                    </div>
+                                    <div class="gauge-label">
+                                        <span class="gauge-value" id="ph-value">--</span>
+                                    </div>
+                                    <span class="gauge-title">Soil pH</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+                <div class="grid-col">
+                    <div class="card pump-control">
+                        <div class="card-header">
+                            <h2>Irrigation Control</h2>
+                            <div class="mode-toggle">
+                                <label class="switch">
+                                    <input type="checkbox" id="mode-toggle">
+                                    <span class="slider round"></span>
+                                </label>
+                                <span id="control-mode">Auto</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="irrigation-status">
+                                <div class="status-icon" id="pump-icon">
+                                    <i class="fas fa-tint"></i>
+                                </div>
+                                <div class="status-info">
+                                    <div class="status-label">Water Pump</div>
+                                    <div class="status-value" id="pump-status">Inactive</div>
+                                </div>
+                            </div>
+                            <div class="moisture-info">
+                                <div class="info-item">
+                                    <div class="info-label">Current Moisture:</div>
+                                    <div class="info-value" id="current-moisture">--</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Optimal Moisture:</div>
+                                    <div class="info-value" id="optimal-moisture">--</div>
+                                </div>
+                            </div>
+                            <div class="manual-controls" id="manual-controls" style="display: none;">
+                                <button class="btn btn-success" id="start-pump">
+                                    <i class="fas fa-play"></i> Start Pump
+                                </button>
+                                <button class="btn btn-danger" id="stop-pump">
+                                    <i class="fas fa-stop"></i> Stop Pump
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            `;
-          } else {
-            predictionHtml = `
-                <div class="col-span-2">
-                <p class="text-red-500">Could not generate prediction. API returned unexpected data.</p>
-                <pre class="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">${JSON.stringify(prediction, null, 2)}</pre>
+            </div>
+
+            <div class="grid-row">
+                <div class="grid-col">
+                    <div class="card nutrients">
+                        <div class="card-header">
+                            <h2>Nutrient Levels</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="nutrients-container">
+                                <div class="nutrient" id="nitrogen">
+                                    <div class="nutrient-label">N</div>
+                                    <div class="nutrient-bar">
+                                        <div class="nutrient-fill"></div>
+                                    </div>
+                                    <div class="nutrient-value">--</div>
+                                </div>
+                                <div class="nutrient" id="phosphorus">
+                                    <div class="nutrient-label">P</div>
+                                    <div class="nutrient-bar">
+                                        <div class="nutrient-fill"></div>
+                                    </div>
+                                    <div class="nutrient-value">--</div>
+                                </div>
+                                <div class="nutrient" id="potassium">
+                                    <div class="nutrient-label">K</div>
+                                    <div class="nutrient-bar">
+                                        <div class="nutrient-fill"></div>
+                                    </div>
+                                    <div class="nutrient-value">--</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            `;
-          }
-          
-          predictionContent.innerHTML = predictionHtml;
-          
-      } catch (error) {
-          console.error('Error generating prediction:', error);
-          predictionContent.innerHTML = `
-          <div class="col-span-2 text-red-500">
-              An error occurred while generating the prediction: ${error.message}
-              <p class="mt-2 text-xs">Check the console for more details.</p>
-          </div>
-          `;
-      }
-    }
+                <div class="grid-col">
+                    <div class="card field-settings">
+                        <div class="card-header">
+                            <h2>Field Settings</h2>
+                        </div>
+                        <div class="card-body">
+                            <form id="field-settings-form">
+                                <div class="form-group">
+                                    <label for="crop-type">Crop Type</label>
+                                    <input type="text" id="crop-type" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="moisture-threshold">Optimal Moisture (%)</label>
+                                    <input type="number" id="moisture-threshold" min="1" max="100" required>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    // Fetch sensor data
-    async function fetchData() {
-      try {
-        const interval = timeIntervalSelect.value;
-        const response = await fetch(`/api/sensor-data?interval=${interval}`);
-        sensorData = await response.json();
-        
-        currentPage = 1;
-        renderTable();
-        updateCharts();
-        updateCurrentStatus();
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    }
+            <div class="grid-row">
+                <div class="grid-col">
+                    <div class="card crop-prediction">
+                        <div class="card-header">
+                            <h2>Crop Prediction</h2>
+                        </div>
+                        <div class="card-body">
+                            <form id="prediction-form">
+                                <div class="form-group-container">
+                                    <div class="form-group">
+                                        <label for="soil-moisture">Soil Moisture (%)</label>
+                                        <input type="number" id="soil-moisture" min="0" max="100" value="30" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="nitrogen">Nitrogen (N)</label>
+                                        <input type="number" id="nitrogen" min="0" max="100" value="50" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="phosphorus">Phosphorus (P)</label>
+                                        <input type="number" id="phosphorus" min="0" max="100" value="50" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="potassium">Potassium (K)</label>
+                                        <input type="number" id="potassium" min="0" max="100" value="50" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="soil-ph">Soil pH</label>
+                                        <input type="number" id="soil-ph" min="0" max="14" step="0.1" value="6.5" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="land-size">Land Size (acres)</label>
+                                        <input type="number" id="land-size" min="1" max="1000" value="10" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="last-crop">Last Crop</label>
+                                        <select id="last-crop" required>
+                                            <option value="Wheat">Wheat</option>
+                                            <option value="Rice">Rice</option>
+                                            <option value="Maize">Maize</option>
+                                            <option value="Soybean">Soybean</option>
+                                            <option value="Cotton">Cotton</option>
+                                            <option value="None">None</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="target-crop">Target Crop</label>
+                                        <select id="target-crop" required>
+                                            <option value="Wheat">Wheat</option>
+                                            <option value="Rice">Rice</option>
+                                            <option value="Maize">Maize</option>
+                                            <option value="Soybean">Soybean</option>
+                                            <option value="Cotton">Cotton</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Get Prediction</button>
+                                    <button type="button" id="use-current-data" class="btn btn-secondary">Use Current Data</button>
+                                </div>
+                            </form>
+                            <div class="prediction-result" id="prediction-result" style="display: none;">
+                                <div class="result-header">Prediction Result</div>
+                                <div class="result-container">
+                                    <div class="result-item">
+                                        <div class="result-label">Recommended Crop:</div>
+                                        <div class="result-value" id="recommended-crop">--</div>
+                                    </div>
+                                    <div class="result-item">
+                                        <div class="result-label">Confidence:</div>
+                                        <div class="result-value" id="confidence-level">--</div>
+                                    </div>
+                                    <div class="recommendation-message" id="recommendation-message">
+                                        <!-- Recommendation message will be displayed here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    // Add dummy data
-    async function addDummyData() {
-      try {
-        await fetch('/api/sensor-data', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({})  // Empty object for dummy data
-        });
-        fetchData();
-      } catch (error) {
-        console.error('Error adding dummy data:', error);
-      }
-    }
+            <div class="grid-row">
+                <div class="grid-col">
+                    <div class="card sensor-history">
+                        <div class="card-header">
+                            <h2>Sensor History</h2>
+                            <div class="chart-controls">
+                                <select id="chart-type-select">
+                                    <option value="moisture">Soil Moisture</option>
+                                    <option value="pH">Soil pH</option>
+                                    <option value="nutrients">Soil Nutrients</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="sensor-chart"></canvas>
+                            </div>
+                            <div class="chart-legend" id="chart-legend">
+                                <!-- Legend items will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    // Clear all data
-    async function clearAllData() {
-      if (confirm('Are you sure you want to clear all sensor data?')) {
-        try {
-          await fetch('/api/sensor-data', {
-            method: 'DELETE'
-          });
-          fetchData();
-        } catch (error) {
-          console.error('Error clearing data:', error);
-        }
-      }
-    }
-
-    // Render data table
-    function renderTable() {
-      readingsTableBody.innerHTML = '';
-      
-      if (sensorData.length === 0) {
-        noDataInfo.classList.remove('hidden');
-        readingsTableBody.innerHTML = `
-          <tr>
-            <td colspan="6" class="px-6 py-4 text-center text-gray-500">No data available</td>
-          </tr>
-        `;
-        paginationInfo.textContent = 'Showing 0-0 of 0 entries';
-        prevPageBtn.disabled = true;
-        nextPageBtn.disabled = true;
-        return;
-      }
-      
-      noDataInfo.classList.add('hidden');
-      
-      const start = (currentPage - 1) * rowsPerPage;
-      const end = Math.min(start + rowsPerPage, sensorData.length);
-      
-      for (let i = start; i < end; i++) {
-        const reading = sensorData[i];
-        const row = document.createElement('tr');
-        
-        const date = new Date(reading.timestamp);
-        const formattedDate = date.toLocaleString();
-        
-        row.innerHTML = `
-          <td class="px-6 py-4 whitespace-nowrap">${formattedDate}</td>
-          <td class="px-6 py-4 whitespace-nowrap">${reading.soil_moisture}%</td>
-          <td class="px-6 py-4 whitespace-nowrap">${reading.nitrogen} mg/kg</td>
-          <td class="px-6 py-4 whitespace-nowrap">${reading.phosphorus} mg/kg</td>
-          <td class="px-6 py-4 whitespace-nowrap">${reading.potassium} mg/kg</td>
-          <td class="px-6 py-4 whitespace-nowrap">${reading.soil_ph}</td>
-        `;
-        
-        readingsTableBody.appendChild(row);
-      }
-      
-      // Update pagination info
-      paginationInfo.textContent = `Showing ${start + 1}-${end} of ${sensorData.length} entries`;
-      
-      // Update pagination buttons
-      prevPageBtn.disabled = currentPage === 1;
-      nextPageBtn.disabled = end >= sensorData.length;
-    }
-
-    // Initialize charts
-    function initCharts() {
-      // Nutrients chart
-      const nutrientsCtx = document.getElementById('nutrientsChart').getContext('2d');
-      nutrientsChart = new Chart(nutrientsCtx, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [
-            {
-              label: 'Nitrogen (N)',
-              data: [],
-              borderColor: 'rgb(59, 130, 246)',
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              tension: 0.1,
-              fill: true
-            },
-            {
-              label: 'Phosphorus (P)',
-              data: [],
-              borderColor: 'rgb(16, 185, 129)',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              tension: 0.1,
-              fill: true
-            },
-            {
-              label: 'Potassium (K)',
-              data: [],
-              borderColor: 'rgb(249, 115, 22)',
-              backgroundColor: 'rgba(249, 115, 22, 0.1)',
-              tension: 0.1,
-              fill: true
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: {
-                display: true,
-                text: 'Concentration (mg/kg)'
-              }
-            },
-            x: {
-              title: {
-                display: true,
-                text: 'Time'
-              }
-            }
-          }
-        }
-      });
-      
-      // Moisture & pH chart
-      const moistureCtx = document.getElementById('moistureChart').getContext('2d');
-      moistureChart = new Chart(moistureCtx, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [
-            {
-              label: 'Soil Moisture',
-              data: [],
-              borderColor: 'rgb(6, 182, 212)',
-              backgroundColor: 'rgba(6, 182, 212, 0.1)',
-              tension: 0.1,
-              fill: true,
-              yAxisID: 'y'
-            },
-            {
-              label: 'Soil pH',
-              data: [],
-              borderColor: 'rgb(190, 24, 93)',
-              backgroundColor: 'rgba(190, 24, 93, 0.1)',
-              tension: 0.1,
-              fill: true,
-              yAxisID: 'y1'
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: {
-                display: true,
-                text: 'Moisture (%)'
-              },
-              position: 'left'
-            },
-            y1: {
-              beginAtZero: false,
-              title: {
-                display: true,
-                text: 'pH'
-              },
-              min: 3,
-              max: 9,
-              position: 'right',
-              grid: {
-                drawOnChartArea: false
-              }
-            },
-            x: {
-              title: {
-                display: true,
-                text: 'Time'
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // Update charts with new data
-    function updateCharts() {
-      if (sensorData.length === 0) return;
-      
-      const chartData = [...sensorData].reverse().slice(0, 20);
-      const labels = chartData.map(d => {
-        const date = new Date(d.timestamp);
-        return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-      });
-      
-      // Update nutrients chart
-      nutrientsChart.data.labels = labels;
-      nutrientsChart.data.datasets[0].data = chartData.map(d => d.nitrogen);
-      nutrientsChart.data.datasets[1].data = chartData.map(d => d.phosphorus);
-      nutrientsChart.data.datasets[2].data = chartData.map(d => d.potassium);
-      nutrientsChart.update();
-      
-      // Update moisture & pH chart
-      moistureChart.data.labels = labels;
-      moistureChart.data.datasets[0].data = chartData.map(d => d.soil_moisture);
-      moistureChart.data.datasets[1].data = chartData.map(d => d.soil_ph);
-      moistureChart.update();
-    }
-
-    // Update current status gauges
-    function updateCurrentStatus() {
-      if (sensorData.length === 0) {
-        currentStatus.innerHTML = '';
-        noDataInfo.classList.remove('hidden');
-        return;
-      }
-      
-      noDataInfo.classList.add('hidden');
-      const latest = sensorData[0];
-      
-      // Define gauges
-      const gauges = [
-        {
-          name: 'Soil Moisture',
-          value: latest.soil_moisture,
-          unit: '%',
-          optimal: '30-50%',
-          color: getColorClass(latest.soil_moisture, 20, 30, 50, 70)
-        },
-        {
-          name: 'Nitrogen',
-          value: latest.nitrogen,
-          unit: 'mg/kg',
-          optimal: '40-80 mg/kg',
-          color: getColorClass(latest.nitrogen, 20, 40, 80, 100)
-        },
-        {
-          name: 'Phosphorus',
-          value: latest.phosphorus,
-          unit: 'mg/kg',
-          optimal: '20-60 mg/kg',
-          color: getColorClass(latest.phosphorus, 10, 20, 60, 80)
-        },
-        {
-          name: 'Potassium',
-          value: latest.potassium,
-          unit: 'mg/kg',
-          optimal: '30-70 mg/kg',
-          color: getColorClass(latest.potassium, 15, 30, 70, 90)
-        },
-        {
-          name: 'Soil pH',
-          value: latest.soil_ph,
-          unit: '',
-          optimal: '6.0-7.0',
-          color: getColorClass(latest.soil_ph, 5.0, 6.0, 7.0, 8.0)
-        }
-      ];
-      
-      // Create gauge elements
-      currentStatus.innerHTML = gauges.map(gauge => `
-        <div class="flex flex-col items-center">
-          <div class="gauge">
-            <svg width="120" height="120" viewBox="0 0 120 120">
-              <path d="M10,70 A60,60 0 0,1 110,70" fill="none" stroke="#e5e7eb" stroke-width="10" stroke-linecap="round" />
-              <path d="M10,70 A60,60 0 0,1 110,70" fill="none" stroke="${gauge.color}" stroke-width="10" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="${getGaugeOffset(gauge.name, gauge.value)}" />
-            </svg>
-            <div class="gauge-value text-2xl ${gauge.color === '#22c55e' ? 'text-green-600' : ''}">${gauge.value}${gauge.unit}</div>
-          </div>
-          <div class="text-center mt-2">
-            <h3 class="font-medium">${gauge.name}</h3>
-            <p class="text-sm text-gray-500">Optimal: ${gauge.optimal}</p>
-          </div>
+            <!-- <div class="grid-row">
+                <div class="grid-col">
+                    <div class="card soil-history">
+                        <div class="card-header">
+                            <h2>Moisture Trends</h2>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="moisture-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div> -->
         </div>
-      `).join('');
-    }
+    </main>
 
-    // Helper function to get gauge offset
-    function getGaugeOffset(name, value) {
-      let percentage;
-      if (name === 'Soil pH') {
-        percentage = (value - 4) / 6; // Map pH 4-10 to 0-100%
-      } else {
-        percentage = value / 100;
-      }
-      percentage = Math.min(Math.max(percentage, 0), 1);
-      return 157 - (percentage * 157);
-    }
+    <div class="notification" id="notification">
+        <div class="notification-icon">
+            <i class="fas fa-info-circle"></i>
+        </div>
+        <div class="notification-content">
+            <div class="notification-title" id="notification-title"></div>
+            <div class="notification-message" id="notification-message"></div>
+        </div>
+        <button class="notification-close" id="notification-close">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
 
-    // Helper function to get color class based on value
-    function getColorClass(value, veryLow, low, high, veryHigh) {
-      if (value < veryLow) return '#ef4444'; // red-500
-      if (value < low) return '#f97316';     // orange-500
-      if (value <= high) return '#22c55e';   // green-500
-      if (value <= veryHigh) return '#f97316'; // orange-500
-      return '#ef4444';                      // red-500
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        // Global variables
+        let selectedField = 'field1';
+        let selectedTimeInterval = '1 day';
+        let moistureChart = null;
+        let currentMode = 'auto';
+        let currentMotorStatus = false;
+        
+        // DOM elements
+        const fieldSelect = document.getElementById('field-select');
+        const timeButtons = document.querySelectorAll('.time-btn');
+        const modeToggle = document.getElementById('mode-toggle');
+        const controlMode = document.getElementById('control-mode');
+        const manualControls = document.getElementById('manual-controls');
+        const startPumpBtn = document.getElementById('start-pump');
+        const stopPumpBtn = document.getElementById('stop-pump');
+        const fieldSettingsForm = document.getElementById('field-settings-form');
+        const cropTypeSelect = document.getElementById('crop-type');
+        const moistureThreshold = document.getElementById('moisture-threshold');
+        
+        // On load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            
+            initializeDashboard();
+            
+            // Event listeners
+            fieldSelect.addEventListener('change', () => {
+                selectedField = fieldSelect.value;
+                initializeDashboard();
+            });
+            
+            timeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    timeButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedTimeInterval = btn.dataset.interval;
+                    fetchSensorData();
+                });
+            });
+            
+            modeToggle.addEventListener('change', () => {
+                currentMode = modeToggle.checked ? 'manual' : 'auto';
+                controlMode.textContent = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
+                manualControls.style.display = currentMode === 'manual' ? 'flex' : 'none';
+                updateFieldSettings();
+            });
+            
+            startPumpBtn.addEventListener('click', () => {
+                setMotorStatus(true);
+            });
+            
+            stopPumpBtn.addEventListener('click', () => {
+                setMotorStatus(false);
+            });
+            
+            fieldSettingsForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                updateFieldSettings();
+            });
+            
+            document.getElementById('notification-close').addEventListener('click', () => {
+                document.getElementById('notification').classList.remove('active');
+            });
+        });
+        
+        // Initialize dashboard
+        function initializeDashboard() {
+            fetchFieldSettings();
+            fetchLatestReading();
+            fetchSensorData();
+            
+            // Refresh data every 30 seconds
+            setInterval(fetchLatestReading, 30000);
+        }
+        
+        // Update current time
+        function updateCurrentTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+        }
+        
+        // Fetch field settings
+        async function fetchFieldSettings() {
+            try {
+                const response = await fetch(`/api/motor-status?field=${selectedField}`);
+                const data = await response.json();
+                
+                if (data.configured) {
+                    cropTypeSelect.value = data.crop;
+                    moistureThreshold.value = data.optimal_moisture;
+                    currentMode = data.mode;
+                    modeToggle.checked = currentMode === 'manual';
+                    controlMode.textContent = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
+                    manualControls.style.display = currentMode === 'manual' ? 'flex' : 'none';
+                }
+            } catch (error) {
+                console.error('Error fetching field settings:', error);
+                showNotification('Error', 'Failed to load field settings');
+            }
+        }
+        
+        // Fetch latest sensor reading
+        async function fetchLatestReading() {
+            try {
+                const response = await fetch(`/api/latest-reading?area=${selectedField}`);
+                const motorResponse = await fetch(`/api/get-motor-status?field=${selectedField}`);
+                
+                const sensorData = await response.json();
+                const motorData = await motorResponse.json();
+                
+                if (sensorData) {
+                    updateDashboardWithLatestData(sensorData, motorData);
+                }
+            } catch (error) {
+                console.error('Error fetching latest reading:', error);
+                showNotification('Error', 'Failed to load latest sensor data');
+            }
+        }
+        
+        // Update dashboard with latest data
+        function updateDashboardWithLatestData(sensorData, motorData) {
+            // Update last updated time
+            const lastUpdated = new Date(sensorData.timestamp);
+            document.getElementById('last-updated-time').textContent = lastUpdated.toLocaleString();
+            
+            // Update moisture gauge
+            const moistureValue = sensorData.soil_moisture;
+            document.getElementById('moisture-value').textContent = moistureValue;
+            document.getElementById('current-moisture').textContent = `${moistureValue}%`;
+            document.getElementById('optimal-moisture').textContent = `${motorData.optimal_moisture}%`;
+            updateGauge('moisture-gauge', moistureValue, 100);
+            
+            // Update pH gauge
+            const phValue = sensorData.soil_ph;
+            document.getElementById('ph-value').textContent = phValue;
+            updateGauge('pH-gauge', (phValue - 4) * 20, 100); // Map pH 4-9 to 0-100%
+            
+            // Update nutrients
+            updateNutrientBar('nitrogen', sensorData.nitrogen);
+            updateNutrientBar('phosphorus', sensorData.phosphorus);
+            updateNutrientBar('potassium', sensorData.potassium);
+            
+            // Update pump status
+            currentMotorStatus = motorData.motor_status;
+            const pumpStatus = document.getElementById('pump-status');
+            const pumpIcon = document.getElementById('pump-icon');
+            
+            if (currentMotorStatus) {
+                pumpStatus.textContent = 'Active';
+                pumpStatus.classList.add('active');
+                pumpIcon.classList.add('active');
+            } else {
+                pumpStatus.textContent = 'Inactive';
+                pumpStatus.classList.remove('active');
+                pumpIcon.classList.remove('active');
+            }
+        }
+        
+        // Update gauge
+        function updateGauge(gaugeId, value, max) {
+            const fillPercent = Math.min(Math.max(value / max * 100, 0), 100);
+            const gauge = document.getElementById(gaugeId);
+            const gaugeFill = gauge.querySelector('.gauge-fill');
+            
+            gaugeFill.style.transform = `rotate(${fillPercent * 1.8}deg)`;
+            
+            // Update color based on value
+            if (fillPercent < 30) {
+                gaugeFill.style.backgroundColor = '#ff4747';
+            } else if (fillPercent < 70) {
+                gaugeFill.style.backgroundColor = '#ffc107';
+            } else {
+                gaugeFill.style.backgroundColor = '#4caf50';
+            }
+        }
+        
+        // Update nutrient bar
+        function updateNutrientBar(nutrientId, value) {
+            const nutrient = document.getElementById(nutrientId);
+            const fillEl = nutrient.querySelector('.nutrient-fill');
+            const valueEl = nutrient.querySelector('.nutrient-value');
+            
+            fillEl.style.width = `${value}%`;
+            valueEl.textContent = value;
+            
+            // Update color based on value
+            if (value < 30) {
+                fillEl.style.backgroundColor = '#ff4747';
+            } else if (value < 70) {
+                fillEl.style.backgroundColor = '#ffc107';
+            } else {
+                fillEl.style.backgroundColor = '#4caf50';
+            }
+        }
+        
+        // Fetch sensor data for chart
+        async function fetchSensorData() {
+            try {
+                const response = await fetch(`/api/sensor-data?interval=${selectedTimeInterval}&area=${selectedField}`);
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    updateMoistureChart(data);
+                }
+            } catch (error) {
+                console.error('Error fetching sensor data:', error);
+                showNotification('Error', 'Failed to load historical data');
+            }
+        }
+
+// DOM elements for sensor history
+const chartTypeSelect = document.getElementById('chart-type-select');
+const chartLegend = document.getElementById('chart-legend');
+let sensorChart = null;
+
+// Event listeners for sensor history
+if (chartTypeSelect) {
+    chartTypeSelect.addEventListener('change', () => {
+        updateSensorChart();
+    });
+}
+
+// Update sensor chart when time interval changes
+document.addEventListener('DOMContentLoaded', () => {
+    // Add this to your existing DOMContentLoaded event
+    if (timeButtons) {
+        timeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (chartTypeSelect) {
+                    updateSensorChart();
+                }
+            });
+        });
     }
-  </script>
+});
+
+// Fetch and display sensor history data
+async function updateSensorChart() {
+    if (!document.getElementById('sensor-chart')) {
+        return;
+    }
+    
+    try {
+        const chartType = chartTypeSelect ? chartTypeSelect.value : 'moisture';
+        const response = await fetch(`/api/sensor-data?interval=${selectedTimeInterval}&area=${selectedField}`);
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+            renderSensorChart(data, chartType);
+        } else {
+            showNotification('Warning', 'No sensor data available for the selected period');
+        }
+    } catch (error) {
+        console.error('Error fetching sensor history:', error);
+        showNotification('Error', 'Failed to load sensor history');
+    }
+}
+
+// Render sensor chart based on selected type
+function renderSensorChart(data, chartType) {
+    const ctx = document.getElementById('sensor-chart').getContext('2d');
+    
+    // Reverse data to show chronological order
+    const chartData = data.reverse();
+    const labels = chartData.map(item => moment(item.timestamp).format('MMM D, HH:mm'));
+    
+    // Destroy existing chart if exists
+    if (sensorChart) {
+        sensorChart.destroy();
+    }
+    
+    // Configure chart based on selected type
+    let datasets = [];
+    let yAxisLabel = '';
+    
+    if (chartType === 'moisture') {
+        datasets = [{
+            label: 'Soil Moisture (%)',
+            data: chartData.map(item => item.soil_moisture),
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 2
+        }];
+        yAxisLabel = 'Moisture (%)';
+    } else if (chartType === 'pH') {
+        datasets = [{
+            label: 'Soil pH',
+            data: chartData.map(item => item.soil_pH),
+            backgroundColor: 'rgba(153, 102, 255, 0.2)',
+            borderColor: 'rgba(153, 102, 255, 1)',
+            borderWidth: 2
+        }];
+        yAxisLabel = 'pH Level';
+    } else if (chartType === 'nutrients') {
+        datasets = [
+            {
+                label: 'Nitrogen (N)',
+                data: chartData.map(item => item.nitrogen),
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 2
+            },
+            {
+                label: 'Phosphorus (P)',
+                data: chartData.map(item => item.phosphorus),
+                backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                borderColor: 'rgba(255, 159, 64, 1)',
+                borderWidth: 2
+            },
+            {
+                label: 'Potassium (K)',
+                data: chartData.map(item => item.potassium),
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 2
+            }
+        ];
+        yAxisLabel = 'Nutrient Level (%)';
+    }
+    
+    // Create chart
+    sensorChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: chartType !== 'pH',
+                    min: chartType === 'pH' ? 4 : 0,
+                    max: chartType === 'pH' ? 9 : 100,
+                    title: {
+                        display: true,
+                        text: yAxisLabel
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Time'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Update legend
+    updateChartLegend(datasets);
+}
+
+// Update chart legend with color indicators
+function updateChartLegend(datasets) {
+    if (!chartLegend) return;
+    
+    chartLegend.innerHTML = '';
+    
+    datasets.forEach(dataset => {
+        const legendItem = document.createElement('div');
+        legendItem.className = 'legend-item';
+        
+        const colorIndicator = document.createElement('div');
+        colorIndicator.className = 'color-indicator';
+        colorIndicator.style.backgroundColor = dataset.borderColor;
+        
+        const legendLabel = document.createElement('span');
+        legendLabel.textContent = dataset.label;
+        
+        legendItem.appendChild(colorIndicator);
+        legendItem.appendChild(legendLabel);
+        chartLegend.appendChild(legendItem);
+    });
+}
+
+// Add this to your initializeDashboard function
+function initializeDashboard() {
+    fetchFieldSettings();
+    fetchLatestReading();
+    fetchSensorData();
+    
+    // Add these lines to your existing function
+    if (document.getElementById('sensor-chart')) {
+        updateSensorChart();
+    }
+    
+    // Refresh data every 30 seconds
+    setInterval(fetchLatestReading, 30000);
+}
+        
+        // Update moisture chart
+        function updateMoistureChart(data) {
+            const ctx = document.getElementById('moisture-chart').getContext('2d');
+            
+            // Reverse data to show chronological order
+            const chartData = data.reverse();
+            
+            const labels = chartData.map(item => moment(item.timestamp).format('MMM D, HH:mm'));
+            const moistureData = chartData.map(item => item.soil_moisture);
+            
+            if (moistureChart) {
+                moistureChart.destroy();
+            }
+            
+            moistureChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Soil Moisture (%)',
+                        data: moistureData,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: 'rgba(54, 162, 235, 1)',
+                        pointBorderWidth: 1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Moisture (%)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update field settings
+        async function updateFieldSettings() {
+            try {
+                const cropType = cropTypeSelect.value;
+                const optimalMoisture = moistureThreshold.value;
+                
+                if (!cropType || !optimalMoisture) {
+                    showNotification('Warning', 'Please fill all required fields');
+                    return;
+                }
+                
+                const response = await fetch('/api/field-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        field: selectedField,
+                        crop: cropType,
+                        optimal_moisture: optimalMoisture,
+                        mode: currentMode
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('Success', 'Field settings updated successfully');
+                    fetchLatestReading();
+                } else {
+                    showNotification('Error', data.error || 'Failed to update settings');
+                }
+            } catch (error) {
+                console.error('Error updating field settings:', error);
+                showNotification('Error', 'Failed to update field settings');
+            }
+        }
+        
+        // Set motor status
+        async function setMotorStatus(status) {
+            try {
+                const response = await fetch('/api/manual-motor', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        field: selectedField,
+                        status: status
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentMotorStatus = status;
+                    const actionText = status ? 'started' : 'stopped';
+                    showNotification('Success', `Irrigation pump ${actionText} successfully`);
+                    fetchLatestReading();
+                } else {
+                    showNotification('Error', data.error || 'Failed to control pump');
+                }
+            } catch (error) {
+                console.error('Error controlling motor:', error);
+                showNotification('Error', 'Failed to control irrigation pump');
+            }
+        }
+        
+        // Show notification
+        function showNotification(title, message) {
+            const notification = document.getElementById('notification');
+            document.getElementById('notification-title').textContent = title;
+            document.getElementById('notification-message').textContent = message;
+            
+            notification.classList.add('active');
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                notification.classList.remove('active');
+            }, 5000);
+        }
+    </script>
 </body>
 </html>
