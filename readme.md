@@ -1,110 +1,79 @@
-# AgroVision IoT API
+# Smart Irrigation System API Documentation
 
-This is the backend API for AgroVision, an IoT-based smart farming system. It allows storing, retrieving, and analyzing soil sensor data using PostgreSQL and an external ML model.
+This document provides details for all available API endpoints in the smart irrigation system.
 
-## **Setup & Installation**
+## Table of Contents
+- [Sensor Data](#sensor-data)
+- [Field Settings](#field-settings)
+- [Motor Control](#motor-control)
+- [ML Prediction](#ml-prediction)
 
-1. Clone the repository:
-   ```sh
-   git clone https://github.com/your-repo/agrovision.git
-   cd agrovision
-   ```
+## Sensor Data
 
-2. Install dependencies:
-   ```sh
-   npm install
-   ```
+### Get Sensor Data
+Retrieves sensor data based on time interval and area name.
 
-3. Set up the environment variables in a `.env` file:
-   ```env
-   PORT=3000
-   DATABASE_URL=your_postgresql_connection_string
-   ```
-
-4. Start the server:
-   ```sh
-   node index.js
-   ```
-
----
-
-# **API Documentation**
-
-## **1. Serve Dashboard**
-### `GET /`
-**Description:** Serves the main dashboard HTML page.
-
-**Response:**
-- `200 OK` - Returns `dashboard.html`.
-
----
-
-## **2. Retrieve Sensor Data**
-### `GET /api/sensor-data`
-**Description:** Fetches sensor data within a given time interval.
+**Endpoint:** `GET /api/sensor-data`
 
 **Query Parameters:**
-| Parameter  | Type    | Description                                  | Default |
-|------------|--------|----------------------------------------------|---------|
-| interval   | string | Time range for data retrieval (e.g., '1 day', '1 hour') | '1 day' |
-
-**Example Request:**
-```sh
-GET /api/sensor-data?interval=1 hour
-```
+- `interval` (optional): Time interval for data retrieval (default: '1 day')
+- `area` (optional): Field area name to filter results
 
 **Response:**
 ```json
 [
   {
     "id": 1,
-    "soil_moisture": 45,
-    "nitrogen": 78,
-    "phosphorus": 56,
-    "potassium": 89,
-    "soil_pH": 6.5,
-    "timestamp": "2025-03-31T12:00:00Z"
-  }
+    "area_name": "field1",
+    "soil_moisture": 35,
+    "nitrogen": 45,
+    "phosphorus": 67,
+    "potassium": 23,
+    "soil_pH": 6.2,
+    "timestamp": "2025-04-03T12:34:56.789Z"
+  },
+  // Additional records...
 ]
 ```
 
----
+### Get Latest Reading
+Retrieves the most recent sensor reading for a specific area.
 
-## **3. Get Latest Sensor Reading**
-### `GET /api/latest-reading`
-**Description:** Retrieves the most recent sensor reading.
+**Endpoint:** `GET /api/latest-reading`
+
+**Query Parameters:**
+- `area` (optional): Field area name
 
 **Response:**
 ```json
 {
-  "id": 1,
-  "soil_moisture": 45,
-  "nitrogen": 78,
-  "phosphorus": 56,
-  "potassium": 89,
-  "soil_pH": 6.5,
-  "timestamp": "2025-03-31T12:00:00Z"
+  "id": 42,
+  "area_name": "field1",
+  "soil_moisture": 28,
+  "nitrogen": 52,
+  "phosphorus": 35,
+  "potassium": 48,
+  "soil_pH": 6.8,
+  "timestamp": "2025-04-03T14:25:12.345Z"
 }
 ```
 
----
+### Add Sensor Data
+Adds new sensor data to the database.
 
-## **4. Send Sensor Data**
-### `POST /api/sensor-data`
-**Description:** Stores sensor data in the database.
+**Endpoint:** `POST /api/sensor-data`
 
 **Request Body:**
 ```json
 {
-  "soil_moisture": 45,
-  "nitrogen": 78,
-  "phosphorus": 56,
-  "potassium": 89,
-  "soil_pH": 6.5
+  "area_name": "field1",       // Optional, defaults to "field1"
+  "soil_moisture": 45,         // Optional, random if not provided
+  "nitrogen": 67,              // Optional, random if not provided
+  "phosphorus": 38,            // Optional, random if not provided
+  "potassium": 79,             // Optional, random if not provided
+  "soil_pH": 5.6               // Optional, random if not provided
 }
 ```
-
-> If any field is missing, the server will generate random values.
 
 **Response:**
 ```json
@@ -114,43 +83,10 @@ GET /api/sensor-data?interval=1 hour
 }
 ```
 
----
+### Delete All Sensor Data
+Removes all sensor data from the database.
 
-## **5. Predict Crop Using ML Model**
-### `POST /api/predict`
-**Description:** Calls an external ML API for crop prediction based on sensor data.
-
-**Request Body:** (If empty, fetches latest database values)
-```json
-{
-  "soil_moisture": 45,
-  "N": 78,
-  "P": 56,
-  "K": 89,
-  "soil_pH": 6.5,
-  "land_size": 10,
-  "last_crop": "Wheat",
-  "crop": "Rice"
-}
-```
-
-**Response:** (Example response from ML model)
-```json
-{
-  "recommended_crop": "Maize",
-  "confidence": 92.5
-}
-```
-
-**Errors:**
-- `400 Bad Request` if required fields are missing.
-- `500 Internal Server Error` if ML API fails.
-
----
-
-## **6. Clear All Sensor Data**
-### `DELETE /api/sensor-data`
-**Description:** Deletes all sensor data from the database.
+**Endpoint:** `DELETE /api/sensor-data`
 
 **Response:**
 ```json
@@ -160,46 +96,128 @@ GET /api/sensor-data?interval=1 hour
 }
 ```
 
----
+## Field Settings
 
-## **7. Database Initialization**
-The API automatically initializes the database with the following schema:
-```sql
-CREATE TABLE IF NOT EXISTS sensor_data (
-  id SERIAL PRIMARY KEY,
-  soil_moisture INT,
-  nitrogen INT,
-  phosphorus INT,
-  potassium INT,
-  soil_pH FLOAT,
-  timestamp TIMESTAMP DEFAULT NOW()
-);
+### Get Motor Status
+Retrieves the motor status for a specific field.
+
+**Endpoint:** `GET /api/get-motor-status`
+
+**Query Parameters:**
+- `field` (optional): Field name (default: 'field1')
+
+**Response:**
+```json
+{
+  "field": "field1",
+  "current_moisture": 28,
+  "optimal_moisture": 35,
+  "mode": "auto",
+  "motor_status": true
+}
 ```
 
----
+### Check Field Settings
+Retrieves configuration settings for a specific field.
 
-## **8. Running with cURL (Examples)**
-### **Send Sensor Data:**
-```sh
-curl -X POST http://localhost:3000/api/sensor-data \
-     -H "Content-Type: application/json" \
-     -d '{"soil_moisture": 40, "nitrogen": 80, "phosphorus": 60, "potassium": 90, "soil_pH": 6.8}'
+**Endpoint:** `GET /api/motor-status`
+
+**Query Parameters:**
+- `field` (optional): Field name (default: 'field1')
+
+**Response:**
+```json
+{
+  "field": "field1",
+  "crop": "Tomatoes",
+  "optimal_moisture": 35,
+  "mode": "auto",
+  "configured": true
+}
 ```
 
-### **Get Latest Reading:**
-```sh
-curl -X GET http://localhost:3000/api/latest-reading
+### Update Field Settings
+Updates the settings for a specific field.
+
+**Endpoint:** `POST /api/field-settings`
+
+**Request Body:**
+```json
+{
+  "field": "field1",           // Required
+  "crop": "Corn",              // Required
+  "optimal_moisture": 40,      // Required
+  "mode": "auto"               // Optional, defaults to "auto"
+}
 ```
 
-### **Clear Sensor Data:**
-```sh
-curl -X DELETE http://localhost:3000/api/sensor-data
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Field settings updated",
+  "field": "field1",
+  "crop": "Corn",
+  "optimal_moisture": 40,
+  "mode": "auto"
+}
 ```
 
----
+## Motor Control
 
-## **9. License**
-This project is open-source and available under the MIT License.
+### Manual Motor Control
+Manually controls the irrigation motor for a specific field.
 
----
+**Endpoint:** `POST /api/manual-motor`
 
+**Request Body:**
+```json
+{
+  "field": "field1",    // Required
+  "status": true        // Required (true to turn on, false to turn off)
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "field": "field1",
+  "motor_status": true,
+  "mode": "manual"
+}
+```
+
+## ML Prediction
+
+### Get Crop Recommendation
+Gets predictions based on soil parameters using a machine learning model.
+
+**Endpoint:** `POST /api/predict`
+
+**Request Body:**
+```json
+{
+  "soil_moisture": 35,    // Required
+  "N": 45,                // Required (Nitrogen)
+  "P": 67,                // Required (Phosphorus)
+  "K": 23,                // Required (Potassium)
+  "soil_pH": 6.2,         // Required
+  "land_size": 10,        // Required (in acres)
+  "last_crop": "Wheat",   // Required
+  "crop": "Rice"          // Required
+}
+```
+
+**Note:** If the request body is empty, the system will use the latest sensor data available.
+
+**Response:**
+The response structure depends on the ML model's output, but generally includes:
+```json
+{
+  "recommended_crop": "Rice",
+  "expected_yield": "85%",
+  "fertilizer_recommendation": "Medium nitrogen, low phosphorus",
+  "water_requirements": "High"
+}
+```
