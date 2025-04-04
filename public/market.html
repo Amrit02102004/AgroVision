@@ -5,58 +5,177 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crop Marketplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
-            background-image: url('assets/imageiot3.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
+            background: linear-gradient(135deg, #f0f4f8 0%, #d7e3fc 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
+        
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        
         /* Remove number input arrows */
         input.no-arrows::-webkit-outer-spin-button,
         input.no-arrows::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
+        
         input.no-arrows {
             -moz-appearance: textfield;
         }
+        
+        .primary-button {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .primary-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+        }
+        
+        .secondary-button {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .secondary-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
+        }
     </style>
 </head>
-<body class="bg-gray-50 bg-opacity-90 flex flex-col items-center justify-center min-h-screen p-6">
+<body class="min-h-screen flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
 
-    <!-- Container for heading and buttons -->
-   <!-- Container for heading and buttons -->
-   <div class="w-full max-w-4xl flex justify-end items-center mb-6">
-    <div class="text-right">
-        <h1 class="text-3xl font-bold text-gray-800">Crop Marketplace</h1>
-        <div class="mt-2 space-x-4">
-            <button onclick="showSection('sellSection')" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg shadow-md transition-all">Sell Crops</button>
-            <button onclick="showSection('buySection')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md transition-all">Buy Crops</button>
+    <!-- Header with logo -->
+    <div class="w-full max-w-5xl mb-12">
+        <div class="flex flex-col sm:flex-row justify-between items-center">
+            <div class="flex items-center mb-6 sm:mb-0">
+                <div class="bg-white p-3 rounded-full shadow-lg mr-4">
+                    <i class="fas fa-leaf text-green-500 text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 tracking-tight">Crop Marketplace</h1>
+            </div>
+            <div class="flex space-x-4">
+                <button onclick="showSection('sellSection')" class="secondary-button text-white px-6 py-3 rounded-full shadow-md font-medium">
+                    <i class="fas fa-plus mr-2"></i>Sell Crops
+                </button>
+                <button onclick="showSection('buySection')" class="primary-button text-white px-6 py-3 rounded-full shadow-md font-medium">
+                    <i class="fas fa-shopping-cart mr-2"></i>Buy Crops
+                </button>
+            </div>
         </div>
     </div>
-</div>
 
     <!-- Sell Crops Section -->
-    <div id="sellSection" class="hidden mt-6 bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
-        <h2 class="text-xl font-semibold text-center text-gray-700 mb-4">Sell Your Crop</h2>
-        <form id="sellForm" class="grid grid-cols-1 gap-4">
-            <input type="text" id="farmerName" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500" placeholder="Your Name" required>
-            <input type="text" id="contactInfo" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500" placeholder="Contact Info" required>
-            <input type="text" id="cropName" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500" placeholder="Crop Name" required>
-            <input type="number" id="pricePerUnit" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 no-arrows" placeholder="Price Per Ton" required>
-            <input type="number" id="quantityAvailable" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 no-arrows" placeholder="Quantity Available" required>
-            <input type="text" id="location" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500" placeholder="Location" required>
-            <p id="errorMessage" class="text-red-500 text-sm hidden">Please enter valid values (greater than zero).</p>
-            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-md transition-all w-full">Submit Listing</button>
-        </form>
+    <div id="sellSection" class="hidden w-full max-w-md">
+        <div class="glassmorphism rounded-2xl p-8">
+            <h2 class="text-xl font-semibold text-center text-gray-800 mb-6">List Your Crops</h2>
+            <form id="sellForm" class="space-y-5">
+                <div>
+                    <label for="farmerName" class="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </div>
+                        <input type="text" id="farmerName" class="pl-10 w-full h-12 bg-white border border-gray-200 rounded-xl px-4 py-2" placeholder="John Smith" required>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="contactInfo" class="block text-sm font-medium text-gray-700 mb-1">Contact Info</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-phone text-gray-400"></i>
+                        </div>
+                        <input type="text" id="contactInfo" class="pl-10 w-full h-12 bg-white border border-gray-200 rounded-xl px-4 py-2" placeholder="Email or Phone Number" required>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="cropName" class="block text-sm font-medium text-gray-700 mb-1">Crop Name</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-seedling text-gray-400"></i>
+                        </div>
+                        <input type="text" id="cropName" class="pl-10 w-full h-12 bg-white border border-gray-200 rounded-xl px-4 py-2" placeholder="e.g., Wheat, Corn, Soybeans" required>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="pricePerUnit" class="block text-sm font-medium text-gray-700 mb-1">Price Per Ton ($)</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-dollar-sign text-gray-400"></i>
+                        </div>
+                        <input type="number" id="pricePerUnit" class="pl-10 w-full h-12 bg-white border border-gray-200 rounded-xl px-4 py-2 no-arrows" placeholder="0.00" required>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="quantityAvailable" class="block text-sm font-medium text-gray-700 mb-1">Quantity Available (tons)</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-weight-hanging text-gray-400"></i>
+                        </div>
+                        <input type="number" id="quantityAvailable" class="pl-10 w-full h-12 bg-white border border-gray-200 rounded-xl px-4 py-2 no-arrows" placeholder="0" required>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-map-marker-alt text-gray-400"></i>
+                        </div>
+                        <input type="text" id="location" class="pl-10 w-full h-12 bg-white border border-gray-200 rounded-xl px-4 py-2" placeholder="City, State" required>
+                    </div>
+                </div>
+                
+                <p id="errorMessage" class="text-red-500 text-sm hidden">Please enter valid values (greater than zero).</p>
+                
+                <button type="submit" class="secondary-button w-full text-white h-12 rounded-xl font-medium">
+                    List Your Crop
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- Buy Crops Section -->
-    <div id="buySection" class="hidden mt-6 bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl">
-        <h2 class="text-xl font-semibold text-center text-gray-700 mb-4">Available Crops for Sale</h2>
-        <div id="cropListings" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Crop listings will be dynamically inserted here -->
+    <div id="buySection" class="hidden w-full max-w-5xl">
+        <div class="glassmorphism rounded-2xl p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-800">Available Crops</h2>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                    <input type="text" id="searchCrops" class="pl-10 h-10 bg-white border border-gray-200 rounded-full px-4" placeholder="Search crops..." onkeyup="filterCrops()">
+                </div>
+            </div>
+            <div id="cropListings" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Crop listings will be dynamically inserted here -->
+            </div>
         </div>
     </div>
 
@@ -65,6 +184,10 @@
             document.getElementById("sellSection").classList.add("hidden");
             document.getElementById("buySection").classList.add("hidden");
             document.getElementById(sectionId).classList.remove("hidden");
+            
+            if(sectionId === "buySection") {
+                loadCropListings();
+            }
         }
 
         document.getElementById("sellForm").addEventListener("submit", function(event) {
@@ -91,16 +214,28 @@
                 cropName,
                 pricePerUnit,
                 quantityAvailable,
-                location
+                location,
+                date: new Date().toLocaleDateString()
             };
 
             let crops = JSON.parse(localStorage.getItem("crops")) || [];
             crops.push(cropData);
             localStorage.setItem("crops", JSON.stringify(crops));
 
-            alert("Crop listed for sale!");
+            // Show success message
+            const successMessage = document.createElement("div");
+            successMessage.className = "fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg";
+            successMessage.innerHTML = "<i class='fas fa-check-circle mr-2'></i>Crop successfully listed!";
+            document.body.appendChild(successMessage);
+            
+            setTimeout(() => {
+                successMessage.classList.add("opacity-0");
+                successMessage.style.transition = "opacity 0.5s ease";
+                setTimeout(() => document.body.removeChild(successMessage), 500);
+            }, 3000);
+            
             document.getElementById("sellForm").reset();
-            loadCropListings();
+            showSection('buySection');
         });
 
         function loadCropListings() {
@@ -109,26 +244,85 @@
             listingsContainer.innerHTML = "";
 
             if (crops.length === 0) {
-                listingsContainer.innerHTML = "<p class='text-center text-gray-500'>No crops listed for sale yet.</p>";
+                listingsContainer.innerHTML = "<div class='col-span-full flex flex-col items-center justify-center py-12'><i class='fas fa-seedling text-gray-300 text-5xl mb-4'></i><p class='text-center text-gray-500'>No crops listed for sale yet.</p></div>";
                 return;
             }
 
             crops.forEach((crop, index) => {
-                let listing = document.createElement("div");
-                listing.className = "bg-gray-100 p-4 rounded-lg shadow-md transition hover:shadow-lg";
-                listing.innerHTML = `
-                    <p class="text-lg font-semibold text-gray-800">${crop.cropName}</p>
-                    <p class="text-gray-600">Farmer: ${crop.farmerName}</p>
-                    <p class="text-gray-600">Contact: ${crop.contactInfo}</p>
-                    <p class="text-gray-600">Price: $${crop.pricePerUnit} per ton</p>
-                    <p class="text-gray-600">Available: ${crop.quantityAvailable} tons</p>
-                    <p class="text-gray-600">Location: ${crop.location}</p>
+                let cropCard = document.createElement("div");
+                cropCard.className = "bg-white rounded-xl shadow-md overflow-hidden card-hover";
+                cropCard.dataset.cropName = crop.cropName.toLowerCase();
+                cropCard.dataset.location = crop.location.toLowerCase();
+                
+                let priceFormatted = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD'
+                }).format(crop.pricePerUnit);
+                
+                cropCard.innerHTML = `
+                    <div class="p-6">
+                        <div class="flex items-center mb-4">
+                            <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-seedling text-green-500"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">${crop.cropName}</h3>
+                                <p class="text-sm text-gray-500">${crop.date}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div class="flex items-center">
+                                <i class="fas fa-user-circle text-gray-400 w-5 mr-2"></i>
+                                <span class="text-gray-600">${crop.farmerName}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-phone text-gray-400 w-5 mr-2"></i>
+                                <span class="text-gray-600">${crop.contactInfo}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-dollar-sign text-gray-400 w-5 mr-2"></i>
+                                <span class="text-gray-600">${priceFormatted} per ton</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-weight-hanging text-gray-400 w-5 mr-2"></i>
+                                <span class="text-gray-600">${crop.quantityAvailable} tons available</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-map-marker-alt text-gray-400 w-5 mr-2"></i>
+                                <span class="text-gray-600">${crop.location}</span>
+                            </div>
+                        </div>
+                        
+                        <button class="primary-button w-full mt-6 py-2 rounded-lg text-white font-medium">
+                            Contact Seller
+                        </button>
+                    </div>
                 `;
-                listingsContainer.appendChild(listing);
+                listingsContainer.appendChild(cropCard);
+            });
+        }
+        
+        function filterCrops() {
+            const searchInput = document.getElementById("searchCrops").value.toLowerCase();
+            const cropCards = document.querySelectorAll("#cropListings > div");
+            
+            cropCards.forEach(card => {
+                const cropName = card.dataset.cropName;
+                const location = card.dataset.location;
+                
+                if(cropName.includes(searchInput) || location.includes(searchInput)) {
+                    card.style.display = "block";
+                } else {
+                    card.style.display = "none";
+                }
             });
         }
 
-        document.addEventListener("DOMContentLoaded", loadCropListings);
+        // Show buy section by default
+        document.addEventListener("DOMContentLoaded", function() {
+            showSection('buySection');
+        });
     </script>
 
 </body>
