@@ -1,196 +1,686 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crop Yield Prediction</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Farming Crop Advisor</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2c5e1a;
+      --primary-light: #4a9c2d;
+      --primary-dark: #1e3e10;
+      --secondary: #f8f9fa;
+      --gray-light: #f0f0f0;
+      --gray: #e0e0e0;
+      --text: #333;
+      --text-light: #666;
+      --success: #28a745;
+      --warning: #ffc107;
+      --danger: #dc3545;
+    }
 
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-    <!-- Image background -->
-    <style>
-        body {
-            background-image: url('assets/imageiot2.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
-    </style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7fa;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .app-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .header h1 {
+      color: var(--primary);
+      font-size: 28px;
+      font-weight: 700;
+      margin-left: 15px;
+    }
+
+    .header i {
+      font-size: 32px;
+      color: var(--primary);
+    }
+
+    .card {
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      padding: 25px;
+      margin-bottom: 30px;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .card-header i {
+      font-size: 24px;
+      color: var(--primary);
+      margin-right: 15px;
+    }
+
+    .card-header h2 {
+      color: var(--primary);
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .input-group {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--gray);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .input-group:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(44, 94, 26, 0.2);
+    }
+
+    .input-group i {
+      padding: 0 12px;
+      color: var(--text-light);
+      background-color: var(--gray-light);
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+
+    select, input {
+      flex: 1;
+      padding: 12px 15px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+
+    button i {
+      margin-right: 8px;
+    }
+
+    button:hover {
+      background-color: var(--primary-light);
+    }
+
+    button:active {
+      background-color: var(--primary-dark);
+      transform: scale(0.98);
+    }
+
+    .button-container {
+      margin-top: 20px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      color: var(--text-light);
+      margin: 15px 0;
+    }
+
+    .loading i {
+      margin-right: 10px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error {
+      color: var(--danger);
+      background-color: rgba(220, 53, 69, 0.1);
+      padding: 12px;
+      border-radius: 8px;
+      margin: 15px 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .error i {
+      margin-right: 10px;
+    }
+
+    .results {
+      background-color: var(--secondary);
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      border-left: 4px solid var(--primary);
+    }
+
+    .results h3 {
+      color: var(--primary);
+      margin-bottom: 15px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+
+    .data-item {
+      padding: 12px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .data-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-light);
+      margin-bottom: 5px;
+    }
+
+    .data-value {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+    }
+
+    .data-value i {
+      margin-right: 8px;
+      font-size: 16px;
+    }
+
+    .recommendation-card {
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      color: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 25px;
+    }
+
+    .recommendation-card h3 {
+      color: white;
+      margin-bottom: 15px;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+    }
+
+    .recommendation-card h3 i {
+      margin-right: 10px;
+    }
+
+    .recommendation-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .recommendation-item i {
+      margin-right: 10px;
+      margin-top: 3px;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--gray);
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .optimals-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .optimal-item {
+      background-color: rgba(255, 255, 255, 0.2);
+      padding: 10px;
+      border-radius: 6px;
+    }
+
+    .optimal-label {
+      font-size: 12px;
+      margin-bottom: 2px;
+      opacity: 0.8;
+    }
+
+    .optimal-value {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      .data-grid, .optimals-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
-<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-6">
-
-    <!-- Prediction Panel -->
-    <div class="bg-white rounded-lg shadow-md p-6 w-full max-w-3xl">
-        <h2 class="text-xl font-semibold mb-4 text-center">Crop Yield Prediction</h2>
-        <form id="predictionForm" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Land Size (acres)</label>
-                <input type="number" id="landSize" class="w-full border rounded-md px-3 py-2" min="1" max="1000" value="10">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Previous Crop</label>
-                <input type="text" id="currentCrop" class="w-full border rounded-md px-3 py-2" placeholder="e.g., Wheat" value="Onion">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Crop to Grow</label>
-                <input type="text" id="cropToGrow" class="w-full border rounded-md px-3 py-2" placeholder="e.g., Rice" value="Sesamum">
-            </div>
-            <div class="md:col-span-3">
-                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg w-full">
-                    Generate Prediction
-                </button>
-            </div>
-        </form>
-        
-        <div id="predictionResult" class="mt-6 hidden">
-            <h3 class="text-lg font-medium mb-2">Prediction Results</h3>
-            <div class="bg-gray-50 p-4 rounded-lg">
-                <div id="predictionContent" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Prediction results will appear here -->
-                </div>
-            </div>
-        </div>
+<body>
+  <div class="app-container">
+    <div class="header">
+      <i class="fas fa-seedling"></i>
+      <h1>Smart Farming Crop Advisor</h1>
     </div>
-
-    <!-- Button to go back to the previous page -->
-    <button onclick="window.location.href='dashboard.html'" 
-        class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg mt-6">
-        Go Back
-    </button>
-
-    <script>
-        document.getElementById("predictionForm").addEventListener("submit", function(event) {
-            event.preventDefault();
-            document.getElementById("predictionResult").classList.remove("hidden");
-            document.getElementById("predictionContent").innerHTML = "<p class='text-green-700'>Prediction result will be shown here.</p>";
-        });
-    </script>
-
     
-
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-          setupEventListeners();
-        });
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-satellite-dish"></i>
+        <h2>Field Sensor Data</h2>
+      </div>
+      
+      <div class="form-group">
+        <label for="area-selector">Select Field Area:</label>
+        <div class="input-group">
+          <i class="fas fa-map-marker-alt"></i>
+          <select id="area-selector">
+            <option value="field1" selected>Field 1</option>
+            <option value="field2">Field 2</option>
+            <option value="field3">Field 3</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="button-container">
+        <button id="fetch-button">
+          <i class="fas fa-sync-alt"></i>
+          Fetch Latest Reading
+        </button>
+      </div>
+      
+      <div id="loading-sensor" class="loading" style="display: none;">
+        <i class="fas fa-circle-notch"></i>
+        Loading sensor data...
+      </div>
+      
+      <div id="error-sensor" class="error" style="display: none;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="error-sensor-text"></span>
+      </div>
+      
+      <div id="sensor-results" class="results" style="display: none;">
+        <h3><i class="fas fa-chart-line"></i> Latest Sensor Reading</h3>
+        <div class="data-grid">
+          <div class="data-item">
+            <span class="data-label">Area</span>
+            <span class="data-value"><i class="fas fa-map-marker-alt"></i><span id="area-name"></span></span>
+          </div>
+          <div class="data-item">
+            <span class="data-label">Soil Moisture</span>
+            <span class="data-value"><i class="fas fa-tint"></i><span id="soil-moisture"></span>%</span>
+          </div>
+          <div class="data-item">
+            <span class="data-label">Nitrogen</span>
+            <span class="data-value"><i class="fas fa-flask"></i><span id="nitrogen"></span> ppm</span>
+          </div>
+          <div class="data-item">
+            <span class="data-label">Phosphorus</span>
+            <span class="data-value"><i class="fas fa-flask"></i><span id="phosphorus"></span> ppm</span>
+          </div>
+          <div class="data-item">
+            <span class="data-label">Potassium</span>
+            <span class="data-value"><i class="fas fa-flask"></i><span id="potassium"></span> ppm</span>
+          </div>
+          <div class="data-item">
+            <span class="data-label">Soil pH</span>
+            <span class="data-value"><i class="fas fa-vial"></i><span id="soil-ph"></span></span>
+          </div>
+        </div>
+        <div class="data-item" style="margin-top: 15px;">
+          <span class="data-label">Timestamp</span>
+          <span class="data-value"><i class="far fa-clock"></i><span id="timestamp"></span></span>
+        </div>
+      </div>
+    </div>
     
-        function setupEventListeners() {
-          const predictionForm = document.getElementById('predictionForm');
-          if (predictionForm) {
-            predictionForm.addEventListener('submit', generatePrediction);
-          }
-        }
-    
-        async function generatePrediction(event) {
-          event.preventDefault();
-          
-          const landSize = document.getElementById('landSize').value;
-          const currentCrop = document.getElementById('currentCrop').value;
-          const cropToGrow = document.getElementById('cropToGrow').value;
-          const predictionContent = document.getElementById('predictionContent');
-          
-          if (!landSize || !currentCrop || !cropToGrow) {
-              alert('Please fill in all prediction fields');
-              return;
-          }
-          
-          try {
-              const response = await fetch('/api/latest-reading');
-              const recentData = await response.json();
-    
-              if (!recentData) {
-                  alert('No sensor data available for prediction.');
-                  return;
-              }
-    
-              predictionContent.innerHTML = '<div class="col-span-2 text-center py-4">Generating prediction...</div>';
-              predictionResult.classList.remove('hidden');
-    
-              const mlResponse = await fetch('/api/predict', {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                      soil_moisture: recentData.soil_moisture,
-                      N: recentData.nitrogen,
-                      P: recentData.phosphorus,
-                      K: recentData.potassium,
-                      soil_pH: recentData.soil_ph,
-                      land_size: parseInt(landSize),
-                      last_crop: currentCrop,
-                      crop: cropToGrow
-                  })
-              });
-    
-              if (!mlResponse.ok) {
-                  throw new Error(`API responded with status: ${mlResponse.status}`);
-              }
-    
-              const prediction = await mlResponse.json();
-              let predictionHtml = '';
-    
-              if (prediction.expected_yield !== undefined) {
-                  const expectedYield = parseFloat(prediction.expected_yield).toFixed(2);
-                  
-                  predictionHtml = `
-                      <div>
-                      <p class="text-sm text-gray-500">Soil Analysis Used</p>
-                      <ul class="mt-1 ml-5 list-disc text-sm">
-                          <li>Moisture: ${recentData.soil_moisture}%</li>
-                          <li>Nitrogen: ${recentData.nitrogen} mg/kg</li>
-                          <li>Phosphorus: ${recentData.phosphorus} mg/kg</li>
-                          <li>Potassium: ${recentData.potassium} mg/kg</li>
-                          <li>pH: ${recentData.soil_ph}</li>
-                      </ul>
-                      </div>
-                      <div>
-                      <p class="text-sm text-gray-500">Prediction Results</p>
-                      <div class="mt-1">
-                          <p class="text-xl font-bold text-green-700">${expectedYield} tons/acre</p>
-                          <p class="text-sm">Expected yield for ${cropToGrow}</p>
-                          <div class="mt-4 p-3 bg-blue-50 rounded">
-                            <p class="font-semibold">Optimal Soil Conditions:</p>
-                            <ul class="mt-1 ml-5 list-disc text-sm">
-                              <li>Optimal Nitrogen: ${prediction.optimal_N} mg/kg</li>
-                              <li>Optimal Phosphorus: ${prediction.optimal_P} mg/kg</li>
-                              <li>Optimal Potassium: ${prediction.optimal_K} mg/kg</li>
-                              <li>Optimal pH Range: ${prediction.optimal_pH_min.toFixed(1)} - ${prediction.optimal_pH_max.toFixed(1)}</li>
-                            </ul>
-                          </div>
-                      </div>
-                      </div>
-                  `;
-              } else {
-                  predictionHtml = `
-                      <div class="col-span-2">
-                      <p class="text-red-500">Could not generate prediction.</p>
-                      <pre class="mt-2 p-2 bg-gray-100 rounded text-xs">${JSON.stringify(prediction, null, 2)}</pre>
-                      </div>
-                  `;
-              }
-              
-              predictionContent.innerHTML = predictionHtml;
-              
-          } catch (error) {
-              console.error('Error generating prediction:', error);
-              predictionContent.innerHTML = `
-              <div class="col-span-2 text-red-500">
-                  An error occurred: ${error.message}
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-leaf"></i>
+        <h2>Crop Prediction</h2>
+      </div>
+      
+      <div class="tabs">
+        <div class="tab active" data-tab="form">Input Data</div>
+        <div class="tab" data-tab="results">Results</div>
+      </div>
+      
+      <div id="form-tab" class="tab-content active">
+        <div class="form-group">
+          <label for="land-size-input">Land Size (acres):</label>
+          <div class="input-group">
+            <i class="fas fa-ruler-combined"></i>
+            <input type="number" id="land-size-input" min="0.1" step="0.1" placeholder="Enter land size">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="last-crop-input">Last Crop:</label>
+          <div class="input-group">
+            <i class="fas fa-history"></i>
+            <input type="text" id="last-crop-input" placeholder="Enter last crop name">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="crop-input">Crop to Grow:</label>
+          <div class="input-group">
+            <i class="fas fa-seedling"></i>
+            <input type="text" id="crop-input" placeholder="Enter crop name to grow">
+          </div>
+        </div>
+        
+        <div class="button-container">
+          <button id="predict-button">
+            <i class="fas fa-calculator"></i>
+            Get Crop Recommendation
+          </button>
+        </div>
+      </div>
+      
+      <div id="results-tab" class="tab-content">
+        <div id="loading-prediction" class="loading" style="display: none;">
+          <i class="fas fa-circle-notch"></i>
+          Processing your request...
+        </div>
+        
+        <div id="error-prediction" class="error" style="display: none;">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span id="error-prediction-text"></span>
+        </div>
+      
+        <div id="prediction-results" style="display: none;">
+          <div class="recommendation-card">
+            <h3><i class="fas fa-award"></i> Crop Recommendation</h3>
+            <div class="recommendation-item">
+              <i class="fas fa-check-circle"></i>
+              <div>
+                <strong>Recommended Crop:</strong> <span id="recommended-crop"></span>
               </div>
-              `;
-          }
+            </div>
+            <div class="recommendation-item">
+              <i class="fas fa-balance-scale"></i>
+              <div>
+                <strong>Expected Yield:</strong> <span id="expected-yield"></span> tons/acre
+              </div>
+            </div>
+            
+            <h3 style="margin-top: 20px;"><i class="fas fa-sliders-h"></i> Optimal Parameters</h3>
+            <div class="optimals-grid">
+              <div class="optimal-item">
+                <div class="optimal-label">Optimal Nitrogen (N)</div>
+                <div class="optimal-value"><span id="optimal-n"></span> ppm</div>
+              </div>
+              <div class="optimal-item">
+                <div class="optimal-label">Optimal Phosphorus (P)</div>
+                <div class="optimal-value"><span id="optimal-p"></span> ppm</div>
+              </div>
+              <div class="optimal-item">
+                <div class="optimal-label">Optimal Potassium (K)</div>
+                <div class="optimal-value"><span id="optimal-k"></span> ppm</div>
+              </div>
+              <div class="optimal-item">
+                <div class="optimal-label">Optimal pH Range</div>
+                <div class="optimal-value"><span id="optimal-ph-min"></span> - <span id="optimal-ph-max"></span></div>
+              </div>
+            </div>
+            
+            <div class="recommendation-item">
+              <i class="fas fa-prescription-bottle"></i>
+              <div>
+                <strong>Fertilizer Recommendation:</strong> <span id="fertilizer-recommendation"></span>
+              </div>
+            </div>
+            <div class="recommendation-item">
+              <i class="fas fa-tint"></i>
+              <div>
+                <strong>Water Requirements:</strong> <span id="water-requirements"></span> mm/day
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let latestSensorData = {};
+
+    // Tab functionality
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        // Remove active class from all tabs
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        // Add active class to clicked tab
+        this.classList.add('active');
+        
+        // Hide all tab content
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        // Show the corresponding tab content
+        document.getElementById(this.dataset.tab + '-tab').classList.add('active');
+      });
+    });
+
+    // Fetch latest sensor data
+    document.getElementById('fetch-button').addEventListener('click', async function() {
+      const areaSelector = document.getElementById('area-selector');
+      const selectedArea = areaSelector.value;
+      
+      // Show loading, hide previous results and errors
+      document.getElementById('loading-sensor').style.display = 'block';
+      document.getElementById('sensor-results').style.display = 'none';
+      document.getElementById('error-sensor').style.display = 'none';
+      
+      try {
+        let url = '/api/latest-reading';
+        if (selectedArea) {
+          url += `?area=${selectedArea}`;
         }
-    </script>
-    
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log("Sensor data:", data);
+        
+        if (!data) {
+          throw new Error("No sensor data available");
+        }
+        
+        latestSensorData = data; // Store latest sensor data globally
+        
+        // Fill in the sensor data
+        document.getElementById('area-name').textContent = data.area_name;
+        document.getElementById('soil-moisture').textContent = data.soil_moisture;
+        document.getElementById('nitrogen').textContent = data.nitrogen;
+        document.getElementById('phosphorus').textContent = data.phosphorus;
+        document.getElementById('potassium').textContent = data.potassium;
+        document.getElementById('soil-ph').textContent = data.soil_pH; 
+        document.getElementById('timestamp').textContent = new Date(data.timestamp).toLocaleString();
+        
+        // Show the results
+        document.getElementById('sensor-results').style.display = 'block';
+      } catch (error) {
+        document.getElementById('error-sensor-text').textContent = `${error.message}`;
+        document.getElementById('error-sensor').style.display = 'block';
+      } finally {
+        document.getElementById('loading-sensor').style.display = 'none';
+      }
+    });
 
+    // Send crop prediction request
+    document.getElementById('predict-button').addEventListener('click', async function() {
+      // Show loading, hide previous results and errors
+      document.getElementById('loading-prediction').style.display = 'block';
+      document.getElementById('prediction-results').style.display = 'none';
+      document.getElementById('error-prediction').style.display = 'none';
+      
+      // Switch to results tab
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelector('.tab[data-tab="results"]').classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.getElementById('results-tab').classList.add('active');
+      
+      // Collect values from the form
+      const landSize = document.getElementById('land-size-input').value || "10";
+      const lastCrop = document.getElementById('last-crop-input').value || "Wheat";
+      const crop = document.getElementById('crop-input').value || "Rice";
+      
+      // Check if we have sensor data
+      if (!latestSensorData || !Object.keys(latestSensorData).length) {
+        document.getElementById('error-prediction-text').textContent = "Please fetch sensor data first";
+        document.getElementById('error-prediction').style.display = 'block';
+        document.getElementById('loading-prediction').style.display = 'none';
+        return;
+      }
+      
+      const soilMoisture = latestSensorData.soil_moisture;
+      const nitrogen = latestSensorData.nitrogen;
+      const phosphorus = latestSensorData.phosphorus;
+      const potassium = latestSensorData.potassium;
+      const soilPh = latestSensorData.soil_ph;
+      
+      try {
+        const response = await fetch('/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            soil_moisture: soilMoisture,
+            N: nitrogen,
+            P: phosphorus,
+            K: potassium,
+            soil_pH: soilPh, // Fixed variable name
+            land_size: parseFloat(landSize),
+            last_crop: lastCrop,
+            crop: crop
+          })
+        });
 
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Server error: ${response.status}`);
+        }
 
-
-
-
-
-
-
+        const data = await response.json();
+        console.log("Prediction data:", data);
+        
+        // Fill in the prediction results
+        document.getElementById('recommended-crop').textContent = data.recommended_crop || crop;
+        document.getElementById('expected-yield').textContent = data.expected_yield.toFixed(2) || "1.51";
+        document.getElementById('optimal-n').textContent = data.optimal_N.toFixed(1) || "51.2";
+        document.getElementById('optimal-p').textContent = data.optimal_P.toFixed(1) || "30.6";
+        document.getElementById('optimal-k').textContent = data.optimal_K.toFixed(1) || "40.6";
+        document.getElementById('optimal-ph-min').textContent = data.optimal_pH_min.toFixed(1) || "6.0";
+        document.getElementById('optimal-ph-max').textContent = data.optimal_pH_max.toFixed(1) || "7.5";
+        
+        // Generate fertilizer recommendations based on nutrient differences
+        const nDiff = data.optimal_N - nitrogen;
+        const pDiff = data.optimal_P - phosphorus;
+        const kDiff = data.optimal_K - potassium;
+        
+        let fertilizerRecommendation = "";
+        if (nDiff > 5) fertilizerRecommendation += `Increase N by ${nDiff.toFixed(1)} ppm. `;
+        if (pDiff > 5) fertilizerRecommendation += `Increase P by ${pDiff.toFixed(1)} ppm. `;
+        if (kDiff > 5) fertilizerRecommendation += `Increase K by ${kDiff.toFixed(1)} ppm. `;
+        
+        if (fertilizerRecommendation === "") {
+          fertilizerRecommendation = "Current nutrient levels are adequate.";
+        }
+        
+        document.getElementById('fertilizer-recommendation').textContent = data.fertilizer_recommendation || fertilizerRecommendation;
+        document.getElementById('water-requirements').textContent = data.water_requirements || "4.5";
+        
+        // Show the results
+        document.getElementById('prediction-results').style.display = 'block';
+      } catch (error) {
+        document.getElementById('error-prediction-text').textContent = `${error.message}`;
+        document.getElementById('error-prediction').style.display = 'block';
+      } finally {
+        document.getElementById('loading-prediction').style.display = 'none';
+      }
+    });
+  </script>
 </body>
 </html>
