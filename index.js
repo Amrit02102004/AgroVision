@@ -28,6 +28,8 @@ async function initDB() {
         id SERIAL PRIMARY KEY,
         area_name VARCHAR(50),
         soil_moisture INT,
+        humidity FLOAT,
+        temperature FLOAT,
         nitrogen INT,
         phosphorus INT,
         potassium INT,
@@ -42,6 +44,8 @@ async function initDB() {
         field_name VARCHAR(50) UNIQUE,
         crop_name VARCHAR(50),
         optimal_moisture INT,
+        optimal_humidity FLOAT,
+        optimal_temperature FLOAT,
         mode VARCHAR(10) DEFAULT 'auto',
         motor_status BOOLEAN DEFAULT FALSE,
         timestamp TIMESTAMP DEFAULT NOW()
@@ -101,12 +105,14 @@ app.get('/api/latest-reading', async (req, res) => {
 });
 
 app.post('/api/sensor-data', async (req, res) => {
-  let { area_name, soil_moisture, nitrogen, phosphorus, potassium, soil_pH } = req.body;
+  let { area_name, soil_moisture, humidity, temperature, nitrogen, phosphorus, potassium, soil_pH } = req.body;
   
   area_name = area_name || 'field1';
   
-  if (!soil_moisture || !nitrogen || !phosphorus || !potassium || !soil_pH) {
+  if (!soil_moisture || !humidity || !temperature || !nitrogen || !phosphorus || !potassium || !soil_pH) {
     soil_moisture = Math.floor(Math.random() * 50) + 10;
+    humidity = (Math.random() * 60 + 30).toFixed(1);
+    temperature = (Math.random() * 30 + 10).toFixed(1);
     nitrogen = Math.floor(Math.random() * 100);
     phosphorus = Math.floor(Math.random() * 100);
     potassium = Math.floor(Math.random() * 100);
@@ -115,8 +121,8 @@ app.post('/api/sensor-data', async (req, res) => {
 
   try {
     await pool.query(
-      'INSERT INTO sensor_data (area_name, soil_moisture, nitrogen, phosphorus, potassium, soil_pH) VALUES ($1, $2, $3, $4, $5, $6)',
-      [area_name, soil_moisture, nitrogen, phosphorus, potassium, soil_pH]
+      'INSERT INTO sensor_data (area_name, soil_moisture, humidity, temperature, nitrogen, phosphorus, potassium, soil_pH) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+      [area_name, soil_moisture, humidity, temperature, nitrogen, phosphorus, potassium, soil_pH]
     );
     res.json({ success: true, message: 'Sensor data stored successfully' });
   } catch (err) {
@@ -187,7 +193,7 @@ app.delete('/api/sensor-data', async (req, res) => {
   }
 });
 
-// New route: Get current motor status from ESP32
+// Get current motor status from ESP32
 app.get('/api/get-motor-status', async (req, res) => {
   try {
     const fieldName = req.query.field || 'field1';
@@ -201,8 +207,8 @@ app.get('/api/get-motor-status', async (req, res) => {
     if (fieldCheck.rows.length === 0) {
       // Create default settings if field doesn't exist
       await pool.query(
-        'INSERT INTO field_settings (field_name, crop_name, optimal_moisture, mode, motor_status) VALUES ($1, $2, $3, $4, $5)',
-        [fieldName, 'Unknown', 30, 'auto', false]
+        'INSERT INTO field_settings (field_name, crop_name, optimal_moisture, optimal_humidity, optimal_temperature, mode, motor_status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [fieldName, 'Unknown', 30, 60.0, 25.0, 'auto', false]
       );
     }
     
@@ -219,7 +225,7 @@ app.get('/api/get-motor-status', async (req, res) => {
     );
     
     const settings = fieldSettings.rows[0];
-    const sensorData = latestData.rows[0] || { soil_moisture: 0 };
+    const sensorData = latestData.rows[0] || { soil_moisture: 0, humidity: 0, temperature: 0 };
     
     // Determine motor status based on mode
     let motorStatus = settings.motor_status;
@@ -236,7 +242,11 @@ app.get('/api/get-motor-status', async (req, res) => {
     res.json({
       field: fieldName,
       current_moisture: sensorData.soil_moisture,
+      current_humidity: sensorData.humidity,
+      current_temperature: sensorData.temperature,
       optimal_moisture: settings.optimal_moisture,
+      optimal_humidity: settings.optimal_humidity,
+      optimal_temperature: settings.optimal_temperature,
       mode: settings.mode,
       motor_status: motorStatus
     });
@@ -246,13 +256,13 @@ app.get('/api/get-motor-status', async (req, res) => {
   }
 });
 
-// New route: Check field settings
+// Check field settings
 app.get('/api/motor-status', async (req, res) => {
   try {
     const fieldName = req.query.field || 'field1';
     
     const result = await pool.query(
-      'SELECT field_name, crop_name, optimal_moisture, mode FROM field_settings WHERE field_name = $1',
+      'SELECT field_name, crop_name, optimal_moisture, optimal_humidity, optimal_temperature, mode FROM field_settings WHERE field_name = $1',
       [fieldName]
     );
     
@@ -268,6 +278,8 @@ app.get('/api/motor-status', async (req, res) => {
       field: result.rows[0].field_name,
       crop: result.rows[0].crop_name,
       optimal_moisture: result.rows[0].optimal_moisture,
+      optimal_humidity: result.rows[0].optimal_humidity,
+      optimal_temperature: result.rows[0].optimal_temperature,
       mode: result.rows[0].mode,
       configured: result.rows[0].crop_name !== 'Unknown'
     });
@@ -277,7 +289,7 @@ app.get('/api/motor-status', async (req, res) => {
   }
 });
 
-// New route: Manual motor control
+// Manual motor control
 app.post('/api/manual-motor', async (req, res) => {
   try {
     const { field, status } = req.body;
@@ -311,9 +323,9 @@ app.post('/api/manual-motor', async (req, res) => {
 // Add crop settings route
 app.post('/api/field-settings', async (req, res) => {
   try {
-    const { field, crop, optimal_moisture, mode } = req.body;
+    const { field, crop, optimal_moisture, optimal_humidity, optimal_temperature, mode } = req.body;
     
-    if (!field || !crop || !optimal_moisture) {
+    if (!field || !crop || !optimal_moisture || !optimal_humidity || !optimal_temperature) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     
@@ -326,14 +338,14 @@ app.post('/api/field-settings', async (req, res) => {
     if (fieldCheck.rows.length === 0) {
       // Create new field settings
       await pool.query(
-        'INSERT INTO field_settings (field_name, crop_name, optimal_moisture, mode) VALUES ($1, $2, $3, $4)',
-        [field, crop, optimal_moisture, mode || 'auto']
+        'INSERT INTO field_settings (field_name, crop_name, optimal_moisture, optimal_humidity, optimal_temperature, mode) VALUES ($1, $2, $3, $4, $5, $6)',
+        [field, crop, optimal_moisture, optimal_humidity, optimal_temperature, mode || 'auto']
       );
     } else {
       // Update existing field settings
       await pool.query(
-        'UPDATE field_settings SET crop_name = $1, optimal_moisture = $2, mode = $3 WHERE field_name = $4',
-        [crop, optimal_moisture, mode || 'auto', field]
+        'UPDATE field_settings SET crop_name = $1, optimal_moisture = $2, optimal_humidity = $3, optimal_temperature = $4, mode = $5 WHERE field_name = $6',
+        [crop, optimal_moisture, optimal_humidity, optimal_temperature, mode || 'auto', field]
       );
     }
     
@@ -343,10 +355,45 @@ app.post('/api/field-settings', async (req, res) => {
       field: field,
       crop: crop,
       optimal_moisture: optimal_moisture,
+      optimal_humidity: optimal_humidity,
+      optimal_temperature: optimal_temperature,
       mode: mode || 'auto'
     });
   } catch (err) {
     console.error('Error updating field settings:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// New API endpoint to get environmental conditions
+app.get('/api/environmental-data', async (req, res) => {
+  try {
+    const fieldName = req.query.field || 'field1';
+    const timeInterval = req.query.interval || '1 day';
+    
+    const query = `
+      SELECT 
+        soil_moisture, 
+        humidity, 
+        temperature, 
+        timestamp 
+      FROM 
+        sensor_data 
+      WHERE 
+        area_name = $1 AND 
+        timestamp >= NOW() - INTERVAL '${timeInterval}'
+      ORDER BY 
+        timestamp DESC
+    `;
+    
+    const result = await pool.query(query, [fieldName]);
+    
+    res.json({
+      field: fieldName,
+      data: result.rows
+    });
+  } catch (err) {
+    console.error('Error fetching environmental data:', err);
     res.status(500).json({ error: 'Database error' });
   }
 });

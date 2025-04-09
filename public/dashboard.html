@@ -42,7 +42,7 @@
           <div class="grid-col">
             <div class="card soil-status">
               <div class="card-header">
-                <h2>Soil Status</h2>
+                <h2>Environmental Status</h2>
                 <div class="last-updated">
                   <span>Last updated: </span>
                   <span id="last-updated-time">--</span>
@@ -70,6 +70,26 @@
                       <span class="gauge-value" id="ph-value">--</span>
                     </div>
                     <span class="gauge-title">Soil pH</span>
+                  </div>
+                </div>
+                <div class="environmental-info">
+                  <div class="env-item">
+                    <div class="env-icon">
+                      <i class="fas fa-tint"></i>
+                    </div>
+                    <div class="env-details">
+                      <div class="env-label">Humidity</div>
+                      <div class="env-value" id="humidity-value">--%</div>
+                    </div>
+                  </div>
+                  <div class="env-item">
+                    <div class="env-icon">
+                      <i class="fas fa-thermometer-half"></i>
+                    </div>
+                    <div class="env-details">
+                      <div class="env-label">Temperature</div>
+                      <div class="env-value" id="temperature-value">--°C</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -105,6 +125,16 @@
                   <div class="info-item">
                     <div class="info-label">Optimal Moisture:</div>
                     <div class="info-value" id="optimal-moisture">--</div>
+                  </div>
+                </div>
+                <div class="environmental-thresholds">
+                  <div class="info-item">
+                    <div class="info-label">Optimal Humidity:</div>
+                    <div class="info-value" id="optimal-humidity">--%</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Optimal Temp:</div>
+                    <div class="info-value" id="optimal-temperature">--°C</div>
                   </div>
                 </div>
                 <div
@@ -178,6 +208,28 @@
                       required
                     />
                   </div>
+                  <div class="form-group">
+                    <label for="humidity-threshold">Optimal Humidity (%)</label>
+                    <input
+                      type="number"
+                      id="humidity-threshold"
+                      min="1"
+                      max="100"
+                      step="0.1"
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="temperature-threshold">Optimal Temp (°C)</label>
+                    <input
+                      type="number"
+                      id="temperature-threshold"
+                      min="-10"
+                      max="50"
+                      step="0.1"
+                      required
+                    />
+                  </div>
                   <div class="form-actions">
                     <button type="submit" class="btn btn-primary">
                       Save Settings
@@ -199,6 +251,8 @@
                     <option value="moisture">Soil Moisture</option>
                     <option value="pH">Soil pH</option>
                     <option value="nutrients">Soil Nutrients</option>
+                    <option value="humidity">Humidity</option>
+                    <option value="temperature">Temperature</option>
                   </select>
                 </div>
               </div>
@@ -213,19 +267,6 @@
             </div>
           </div>
         </div>
-
-        <!-- <div class="grid-row">
-                <div class="grid-col">
-                    <div class="card soil-history">
-                        <div class="card-header">
-                            <h2>Moisture Trends</h2>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="moisture-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div> -->
       </div>
     </main>
 
@@ -264,6 +305,8 @@
       const fieldSettingsForm = document.getElementById("field-settings-form");
       const cropTypeSelect = document.getElementById("crop-type");
       const moistureThreshold = document.getElementById("moisture-threshold");
+      const humidityThreshold = document.getElementById("humidity-threshold");
+      const temperatureThreshold = document.getElementById("temperature-threshold");
       const chartTypeSelect = document.getElementById("chart-type-select");
       const chartLegend = document.getElementById("chart-legend");
 
@@ -403,6 +446,8 @@
           if (data.configured) {
             cropTypeSelect.value = data.crop;
             moistureThreshold.value = data.optimal_moisture;
+            humidityThreshold.value = data.optimal_humidity;
+            temperatureThreshold.value = data.optimal_temperature;
             currentMode = data.mode;
             modeToggle.checked = currentMode === "manual";
             controlMode.textContent =
@@ -460,6 +505,14 @@
         const phValue = sensorData.soil_ph;
         document.getElementById("ph-value").textContent = phValue;
         updateGauge("pH-gauge", (phValue - 4) * 20, 100); // Map pH 4-9 to 0-100%
+
+        // Update humidity and temperature
+        document.getElementById("humidity-value").textContent = `${sensorData.humidity}%`;
+        document.getElementById("temperature-value").textContent = `${sensorData.temperature}°C`;
+        
+        // Update optimal thresholds
+        document.getElementById("optimal-humidity").textContent = `${motorData.optimal_humidity}%`;
+        document.getElementById("optimal-temperature").textContent = `${motorData.optimal_temperature}°C`;
 
         // Update nutrients
         updateNutrientBar("nitrogen", sensorData.nitrogen);
@@ -631,6 +684,28 @@
             },
           ];
           yAxisLabel = "Nutrient Level (%)";
+        } else if (chartType === "humidity") {
+          datasets = [
+            {
+              label: "Humidity (%)",
+              data: chartData.map((item) => item.humidity),
+              backgroundColor: "rgba(75, 192, 192, 0.2)",
+              borderColor: "rgba(75, 192, 192, 1)",
+              borderWidth: 2,
+            },
+          ];
+          yAxisLabel = "Humidity (%)";
+        } else if (chartType === "temperature") {
+          datasets = [
+            {
+              label: "Temperature (°C)",
+              data: chartData.map((item) => item.temperature),
+              backgroundColor: "rgba(255, 99, 132, 0.2)",
+              borderColor: "rgba(255, 99, 132, 1)",
+              borderWidth: 2,
+            },
+          ];
+          yAxisLabel = "Temperature (°C)";
         }
 
         // Create chart
@@ -652,8 +727,8 @@
             scales: {
               y: {
                 beginAtZero: chartType !== "pH",
-                min: chartType === "pH" ? 4 : 0,
-                max: chartType === "pH" ? 9 : 100,
+                min: chartType === "pH" ? 4 : (chartType === "temperature" ? 0 : null),
+                max: chartType === "pH" ? 9 : (chartType === "temperature" ? 40 : 100),
                 title: {
                   display: true,
                   text: yAxisLabel,
@@ -769,8 +844,10 @@
         try {
           const cropType = cropTypeSelect.value;
           const optimalMoisture = moistureThreshold.value;
+          const optimalHumidity = humidityThreshold.value;
+          const optimalTemperature = temperatureThreshold.value;
 
-          if (!cropType || !optimalMoisture) {
+          if (!cropType || !optimalMoisture || !optimalHumidity || !optimalTemperature) {
             showNotification("Warning", "Please fill all required fields");
             return;
           }
@@ -784,6 +861,8 @@
               field: selectedField,
               crop: cropType,
               optimal_moisture: optimalMoisture,
+              optimal_humidity: optimalHumidity,
+              optimal_temperature: optimalTemperature,
               mode: currentMode,
             }),
           });
